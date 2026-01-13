@@ -23,7 +23,9 @@ const nextConfig = {
         port: ""
       }
     ]
-  }
+  },
+  output: "standalone",
+  serverExternalPackages: ["@prisma/client"]
 };
 
 export default nextConfig;

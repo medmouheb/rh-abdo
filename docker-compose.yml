@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=file:./prisma/dev.db
+      - JWT_SECRET=super_secret_jwt_key_123
+      - PRISMA_CLIENT_ENGINE_TYPE=library
+    volumes:
+      - ./prisma/dev.db:/app/prisma/dev.db
