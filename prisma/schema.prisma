@@ -1,17 +1,23 @@
 generator client {
   provider      = "prisma-client-js"
   engineType    = "library"
-  binaryTargets = ["native", "linux-musl"]
+  binaryTargets = ["native"]
 }
 
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 model User {
   id       Int    @id @default(autoincrement())
   username String @unique
   password String
+  role     String @default("RECRUITER") // RECRUITER, HR_MANAGER, ADMIN
+  
+  hiringRequests HiringRequest[]
+  validations    CandidateValidation[]
+  interviews     Interview[]
 }
 
 model Employee {
@@ -20,4 +26,176 @@ model Employee {
   lastName  String
   email     String
   position  String
+}
+
+model HiringRequest {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  requestDate DateTime?
+
+  // Personnel Type
+  personnelType String // "OUVRIER", "ETAM", "CADRE"
+
+  // Service Info
+  service      String
+  workLocation String
+  businessUnit String?
+
+  // Job Details
+  jobTitle          String
+  desiredHiringDate DateTime?
+
+  // Reason
+  reason              String // "REPLACEMENT", "BUDGETED_INCREASE", "NON_BUDGETED_INCREASE"
+  
+  // Replacement Details
+  replacementName     String?
+  departureReason     String? // "DEMISSION", "MUTATION", "LICENCIEMENT", "RETRAITE", "DECES", "AUTRE"
+
+  // Increase Details
+  dateRangeStart      DateTime?
+  dateRangeEnd        DateTime?
+
+  // Contract
+  contractType        String // "CDI", "CDD"
+
+  // Text Fields
+  justification       String
+  jobCharacteristics  String
+  candidateEducation  String
+  candidateSkills     String
+
+  // Vacant Position specific
+  recruiterId         Int?
+  recruiter           User?    @relation(fields: [recruiterId], references: [id])
+  recruitmentSource   String?
+  recruitmentMode     String   @default("EXTERNAL") // INTERNAL, EXTERNAL
+  comments            String?
+
+  // Metrics
+  hiringCost          Float?   // Cost in DT
+  processDuration     Int?     // Duration in days
+  performanceRatio    Float?   // Performance ratio (RD)
+  actualHiringDate    DateTime?
+
+  status String @default("VACANT") // VACANT, HIRED, IN_PROGRESS, COMPLETED, CANCELLED, SUSPENDED
+
+  candidates Candidate[]
+}
+
+model Candidate {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Personal Info
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+  birthDate   DateTime?
+  gender      String?   // "MALE", "FEMALE"
+  address     String?
+  postalCode  String?
+  city        String?
+  country     String?
+  
+  // Application details
+  positionAppliedFor String
+  department         String?
+  specialty          String?   // Specialty of the position
+  level              String?   // Level of the position (Junior, Senior, etc.)
+  yearsOfExperience  Int?
+  language           String?   // Language requirement
+  source             String?   // "WEBSITE", "LINKEDIN", "EMAIL", "OTHER"
+  
+  // Documents
+  cvPath             String?
+  documentsPath      String?
+  
+  // Recruiter comments
+  recruiterComments  String?
+  
+  // Status
+  status String @default("RECEIVED") // RECEIVED, SHORTLISTED, TECHNICAL_INTERVIEW, HR_INTERVIEW, SELECTED, MEDICAL_VISIT, OFFER_SENT, HIRED, REJECTED
+  
+  // Link to a specific hiring request
+  hiringRequestId Int?
+  hiringRequest   HiringRequest? @relation(fields: [hiringRequestId], references: [id])
+  
+  // Relations
+  validations CandidateValidation[]
+  interviews  Interview[]
+  medicalVisit MedicalVisit?
+  jobOffer     JobOffer?
+}
+
+model CandidateValidation {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  
+  candidateId Int
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  
+  validatorId Int
+  validator   User      @relation(fields: [validatorId], references: [id])
+  
+  stage       String    // "PERSONNEL_REQUEST", "SHORTLIST", "FINAL_SELECTION"
+  decision    String    // "APPROVED", "REJECTED", "PENDING"
+  comments    String?
+  
+  // Shortlist specific
+  selectionCriteria String?
+  observations      String?
+}
+
+model Interview {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  
+  candidateId Int
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  
+  type        String    // "TECHNICAL", "HR"
+  scheduledAt DateTime
+  
+  // Interviewers
+  interviewerId Int?
+  interviewer   User?   @relation(fields: [interviewerId], references: [id])
+  juryMembers   String? // JSON array of jury member names
+  
+  // Results
+  result      String?   // "ADMITTED", "PENDING", "REJECTED"
+  comments    String?
+  recommendations String?
+}
+
+model MedicalVisit {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  
+  candidateId Int      @unique
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  
+  visitDate   DateTime
+  result      String    // "FIT", "UNFIT"
+  observations String?
+}
+
+model JobOffer {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  
+  candidateId Int      @unique
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  
+  sentDate    DateTime
+  response    String?   // "ACCEPTED", "REJECTED", "PENDING"
+  responseDate DateTime?
+  actualHiringDate DateTime?
+  
+  hrSignature String?   // Name of HR responsible
+  signatureDate DateTime?
 }

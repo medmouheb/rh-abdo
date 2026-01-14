@@ -9,7 +9,7 @@ export const NAV_DATA = [
         icon: Icons.HomeIcon,
         items: [
           {
-            title: "eCommerce",
+            title: "DashboardRecruitment",
             url: "/",
           },
         ],
@@ -18,12 +18,6 @@ export const NAV_DATA = [
         title: "Calendar",
         url: "/calendar",
         icon: Icons.Calendar,
-        items: [],
-      },
-      {
-        title: "Profile",
-        url: "/profile",
-        icon: Icons.User,
         items: [],
       },
       {
@@ -64,6 +58,42 @@ export const NAV_DATA = [
     ],
   },
   {
+    label: "RECRUITMENT",
+    items: [
+      {
+        title: "Demandes d'Embauche",
+        icon: Icons.Alphabet,
+        items: [
+          {
+            title: "Créer une demande",
+            url: "/hiring-requests/create",
+          },
+        ],
+      },
+      {
+        title: "Candidatures",
+        icon: Icons.User,
+        items: [
+          {
+            title: "Liste des candidats",
+            url: "/candidates",
+          },
+          {
+            title: "Nouvelle candidature",
+            url: "/candidates/create",
+          },
+        ],
+      },
+      {
+        title: "Positions Vacantes",
+        icon: Icons.Table,
+        url: "/vacant-positions",
+        items: [],
+      },
+    ],
+  },
+
+  {
     label: "OTHERS",
     items: [
       {
@@ -76,20 +106,7 @@ export const NAV_DATA = [
           },
         ],
       },
-      {
-        title: "UI Elements",
-        icon: Icons.FourCircle,
-        items: [
-          {
-            title: "Alerts",
-            url: "/ui-elements/alerts",
-          },
-          {
-            title: "Buttons",
-            url: "/ui-elements/buttons",
-          },
-        ],
-      },
+     
       {
         title: "Authentication",
         icon: Icons.Authentication,
