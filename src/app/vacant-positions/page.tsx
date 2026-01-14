@@ -5,6 +5,7 @@ import VacantPositionsTable from "@/components/vacant-positions/VacantPositionsT
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { getVacantPositions, getRecruiters } from "@/app/actions/vacant-positions";
+import AnimatedBackground from "@/components/backgrounds/AnimatedBackground";
 
 export default function VacantPositionsPage() {
     const [vacantPositions, setVacantPositions] = useState([]);
@@ -33,23 +34,26 @@ export default function VacantPositionsPage() {
     }
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-        >
-            <Breadcrumb pageName="Vacant Positions" />
+        <>
+            <AnimatedBackground variant="particles" />
             <motion.div
-                className="flex flex-col gap-10"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
             >
-                <VacantPositionsTable
-                    initialData={vacantPositions}
-                    recruiters={recruiters}
-                />
+                <Breadcrumb pageName="Vacant Positions" />
+                <motion.div
+                    className="flex flex-col gap-10"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                >
+                    <VacantPositionsTable
+                        initialData={vacantPositions}
+                        recruiters={recruiters}
+                    />
+                </motion.div>
             </motion.div>
-        </motion.div>
+        </>
     );
 }

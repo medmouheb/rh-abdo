@@ -1,5 +1,3 @@
-// types/recruitment.ts
-
 // ============= REFERENCE DATA TYPES =============
 
 export type Recruiter = 
@@ -17,7 +15,8 @@ export type Department =
   | 'HSE'
   | 'Qualité'
   | 'groupe'
-  | 'achat';
+  | 'achat'
+  | 'Logistique';
 
 export type RecruitmentSource = 
   | 'Site officiel'
@@ -81,8 +80,28 @@ export interface DepartmentInfo {
   activePositions: number;
 }
 
+export type PositionNature = 'creation' | 'remplacemnt';
+
+export interface JobRequest {
+  id: string;
+  department: Department;
+  jobTitle: string;
+  requestDate: Date;
+  site?: WorkSite;
+  positionNature?: PositionNature;
+  justification?: string;
+  positionCharacteristics?: string;
+  candidateRequirements?: string;
+  status: PositionStatus;
+  closureDate?: Date;
+  recruitmentDeadline: number; // en jours
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Position {
   id: string;
+  jobRequestId?: string;
   department: Department;
   recruiter: Recruiter;
   source: RecruitmentSource;
@@ -190,9 +209,238 @@ export const educationLevels: EducationLevel[] = [
 
 // ============= SAMPLE DATA =============
 
+export const jobRequests: JobRequest[] = [
+  {
+    id: 'req-1',
+    department: 'RH',
+    jobTitle: 'Chargé de Recrutement',
+    requestDate: new Date('2025-01-05'),
+    site: undefined,
+    positionNature: undefined,
+    justification: '',
+    positionCharacteristics: '',
+    candidateRequirements: '',
+    status: 'En cours',
+    closureDate: new Date('2026-01-05'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-05'),
+    updatedAt: new Date('2025-01-05')
+  },
+  {
+    id: 'req-2',
+    department: 'RH',
+    jobTitle: 'Chargé de Recrutement',
+    requestDate: new Date('2025-01-06'),
+    status: 'Embauché',
+    closureDate: new Date('2026-01-06'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-06'),
+    updatedAt: new Date('2025-01-06')
+  },
+  {
+    id: 'req-3',
+    department: 'Production',
+    jobTitle: 'Chef d\'équipe',
+    requestDate: new Date('2025-01-02'),
+    status: 'Embauché',
+    closureDate: new Date('2026-01-02'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-02'),
+    updatedAt: new Date('2025-01-02')
+  },
+  {
+    id: 'req-4',
+    department: 'Production',
+    jobTitle: 'Chef d\'équipe',
+    requestDate: new Date('2025-01-03'),
+    status: 'En cours',
+    closureDate: new Date('2026-01-03'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-03'),
+    updatedAt: new Date('2025-01-03')
+  },
+  {
+    id: 'req-5',
+    department: 'Finance',
+    jobTitle: 'Comptable',
+    requestDate: new Date('2025-01-04'),
+    status: 'Vacant',
+    closureDate: new Date('2026-01-04'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-04'),
+    updatedAt: new Date('2025-01-04')
+  },
+  {
+    id: 'req-6',
+    department: 'Logistique',
+    jobTitle: 'Responsable Logistique',
+    requestDate: new Date('2025-01-01'),
+    status: 'Vacant',
+    closureDate: new Date('2026-01-01'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-01'),
+    updatedAt: new Date('2025-01-01')
+  },
+  {
+    id: 'req-7',
+    department: 'Finance',
+    jobTitle: 'Comptable',
+    requestDate: new Date('2025-01-05'),
+    status: 'Suspendu',
+    closureDate: new Date('2026-01-05'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-05'),
+    updatedAt: new Date('2025-01-05')
+  },
+  {
+    id: 'req-8',
+    department: 'Maintenance',
+    jobTitle: 'Technicien',
+    requestDate: new Date('2025-01-07'),
+    status: 'Annulé',
+    closureDate: new Date('2026-01-07'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-07'),
+    updatedAt: new Date('2025-01-07')
+  },
+  {
+    id: 'req-9',
+    department: 'Qualité',
+    jobTitle: 'Ingénieur Qualité',
+    requestDate: new Date('2025-01-03'),
+    status: 'Embauché',
+    closureDate: new Date('2026-01-03'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-03'),
+    updatedAt: new Date('2025-01-03')
+  },
+  {
+    id: 'req-10',
+    department: 'Production',
+    jobTitle: 'Chef d\'équipe',
+    requestDate: new Date('2025-01-04'),
+    status: 'En cours',
+    closureDate: new Date('2026-01-04'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-04'),
+    updatedAt: new Date('2025-01-04')
+  },
+  {
+    id: 'req-11',
+    department: 'HSE',
+    jobTitle: 'Responsable HSE',
+    requestDate: new Date('2025-01-02'),
+    status: 'En cours',
+    closureDate: new Date('2026-01-02'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-02'),
+    updatedAt: new Date('2025-01-02')
+  },
+  {
+    id: 'req-12',
+    department: 'RH',
+    jobTitle: 'Chargé de Recrutement',
+    requestDate: new Date('2025-01-06'),
+    status: 'En cours',
+    closureDate: new Date('2026-01-06'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-06'),
+    updatedAt: new Date('2025-01-06')
+  },
+  {
+    id: 'req-13',
+    department: 'Logistique',
+    jobTitle: 'Responsable Logistique',
+    requestDate: new Date('2025-01-01'),
+    status: 'Annulé',
+    closureDate: new Date('2026-01-01'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-01'),
+    updatedAt: new Date('2025-01-01')
+  },
+  {
+    id: 'req-14',
+    department: 'Méthode & Indus',
+    jobTitle: 'Ingénieur Méthodes',
+    requestDate: new Date('2025-01-05'),
+    status: 'Embauché',
+    closureDate: new Date('2026-01-05'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-05'),
+    updatedAt: new Date('2025-01-05')
+  },
+  {
+    id: 'req-15',
+    department: 'Maintenance',
+    jobTitle: 'Technicien',
+    requestDate: new Date('2025-01-07'),
+    status: 'Suspendu',
+    closureDate: new Date('2026-01-07'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-07'),
+    updatedAt: new Date('2025-01-07')
+  },
+  {
+    id: 'req-16',
+    department: 'Qualité',
+    jobTitle: 'Ingénieur Qualité',
+    requestDate: new Date('2025-01-03'),
+    status: 'Vacant',
+    closureDate: new Date('2026-01-03'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-03'),
+    updatedAt: new Date('2025-01-03')
+  },
+  {
+    id: 'req-17',
+    department: 'Qualité',
+    jobTitle: 'Comptable',
+    requestDate: new Date('2025-01-04'),
+    status: 'En cours',
+    closureDate: new Date('2026-01-04'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-04'),
+    updatedAt: new Date('2025-01-04')
+  },
+  {
+    id: 'req-18',
+    department: 'Production',
+    jobTitle: 'Chef d\'équipe',
+    requestDate: new Date('2025-01-03'),
+    status: 'Terminé',
+    closureDate: new Date('2026-01-03'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-03'),
+    updatedAt: new Date('2025-01-03')
+  },
+  {
+    id: 'req-19',
+    department: 'HSE',
+    jobTitle: 'Responsable HSE',
+    requestDate: new Date('2025-01-02'),
+    status: 'Suspendu',
+    closureDate: new Date('2026-01-02'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-02'),
+    updatedAt: new Date('2025-01-02')
+  },
+  {
+    id: 'req-20',
+    department: 'Méthode & Indus',
+    jobTitle: 'Ingénieur Méthodes',
+    requestDate: new Date('2025-01-05'),
+    status: 'Suspendu',
+    closureDate: new Date('2026-01-05'),
+    recruitmentDeadline: 365,
+    createdAt: new Date('2025-01-05'),
+    updatedAt: new Date('2025-01-05')
+  }
+];
+
 export const positions: Position[] = [
   {
     id: 'pos-1',
+    jobRequestId: 'req-1',
     department: 'RH',
     recruiter: 'SAADANI HIBA',
     source: 'Site officiel',
@@ -204,6 +452,7 @@ export const positions: Position[] = [
   },
   {
     id: 'pos-2',
+    jobRequestId: 'req-3',
     department: 'Production',
     recruiter: 'MOHAMED AYMEN BACOUCHE',
     source: 'LinkedIn',
@@ -215,6 +464,7 @@ export const positions: Position[] = [
   },
   {
     id: 'pos-3',
+    jobRequestId: 'req-14',
     department: 'Méthode & Indus',
     recruiter: 'zoubaier berrebeh',
     source: 'Cabinet de recrutement',
@@ -276,6 +526,51 @@ export const candidates: Candidate[] = [
 
 // ============= UTILITY FUNCTIONS =============
 
+// Job Request queries
+export const getJobRequestsByDepartment = (department: Department): JobRequest[] => {
+  return jobRequests.filter(jr => jr.department === department);
+};
+
+export const getJobRequestsByStatus = (status: PositionStatus): JobRequest[] => {
+  return jobRequests.filter(jr => jr.status === status);
+};
+
+export const getActiveJobRequests = (): JobRequest[] => {
+  return jobRequests.filter(jr => 
+    jr.status === 'En cours' || jr.status === 'Vacant'
+  );
+};
+
+export const getJobRequestsByJobTitle = (jobTitle: string): JobRequest[] => {
+  return jobRequests.filter(jr => 
+    jr.jobTitle.toLowerCase().includes(jobTitle.toLowerCase())
+  );
+};
+
+export const getOverdueJobRequests = (): JobRequest[] => {
+  const today = new Date();
+  return jobRequests.filter(jr => {
+    if (!jr.closureDate) return false;
+    return jr.closureDate < today && 
+           (jr.status === 'En cours' || jr.status === 'Vacant');
+  });
+};
+
+export const getJobRequestStats = () => {
+  const total = jobRequests.length;
+  const byStatus = jobRequests.reduce((acc, jr) => {
+    acc[jr.status] = (acc[jr.status] || 0) + 1;
+    return acc;
+  }, {} as Record<PositionStatus, number>);
+  
+  const byDepartment = jobRequests.reduce((acc, jr) => {
+    acc[jr.department] = (acc[jr.department] || 0) + 1;
+    return acc;
+  }, {} as Record<Department, number>);
+
+  return { total, byStatus, byDepartment };
+};
+
 // Candidate queries
 export const getCandidatesByDepartment = (department: Department): Candidate[] => {
   return candidates.filter(c => c.department === department);
@@ -310,6 +605,17 @@ export const getPositionsByRecruiter = (recruiter: Recruiter): Position[] => {
   return positions.filter(p => p.recruiter === recruiter);
 };
 
+export const getPositionWithJobRequest = (positionId: string) => {
+  const position = positions.find(p => p.id === positionId);
+  if (!position) return null;
+  
+  const jobRequest = position.jobRequestId 
+    ? jobRequests.find(jr => jr.id === position.jobRequestId)
+    : null;
+    
+  return { position, jobRequest };
+};
+
 // Analytics
 export const getTotalHiringCost = (): number => {
   return candidates.reduce((sum, c) => sum + c.hiringCost, 0);
@@ -338,6 +644,43 @@ export const getAverageHiringCost = (): number => {
   const hiredCandidates = getHiredCandidates();
   const totalCost = hiredCandidates.reduce((sum, c) => sum + c.hiringCost, 0);
   return hiredCandidates.length > 0 ? totalCost / hiredCandidates.length : 0;
+};
+
+export const getAverageRecruitmentTime = (): number => {
+  const completedRequests = jobRequests.filter(jr => 
+    jr.status === 'Embauché' || jr.status === 'Terminé'
+  );
+  
+  if (completedRequests.length === 0) return 0;
+  
+  const totalDays = completedRequests.reduce((sum, jr) => {
+    if (!jr.closureDate) return sum;
+    const days = Math.floor(
+      (jr.closureDate.getTime() - jr.requestDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return sum + days;
+  }, 0);
+  
+  return totalDays / completedRequests.length;
+};
+
+export const getRecruiterPerformance = () => {
+  return recruiters.map(recruiter => {
+    const recruiterCandidates = getCandidatesByRecruiter(recruiter.name);
+    const hired = recruiterCandidates.filter(c => c.status === 'Embauché').length;
+    const total = recruiterCandidates.length;
+    const conversionRate = total > 0 ? (hired / total) * 100 : 0;
+    const totalCost = recruiterCandidates.reduce((sum, c) => sum + c.hiringCost, 0);
+    
+    return {
+      recruiter: recruiter.name,
+      department: recruiter.department,
+      totalCandidates: total,
+      hired,
+      conversionRate: conversionRate.toFixed(2),
+      totalCost
+    };
+  });
 };
 
 // Validation helpers

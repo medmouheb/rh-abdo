@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import Link from "next/link";
+import InterviewScheduler from "@/components/modals/InterviewScheduler";
 
 const STATUS_COLORS = {
     RECEIVED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
@@ -23,6 +24,7 @@ export default function CandidateDetailPage() {
     const params = useParams();
     const [candidate, setCandidate] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
 
     useEffect(() => {
         async function fetchCandidate() {
@@ -40,6 +42,45 @@ export default function CandidateDetailPage() {
         }
         fetchCandidate();
     }, [params.id]);
+
+    const handleScheduleInterview = async (date: Date, time: string, type: string, notes: string) => {
+        try {
+            // Call API to schedule interview
+            const response = await fetch('/api/interviews', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    candidateId: params.id,
+                    date: format(date, 'yyyy-MM-dd'),
+                    time,
+                    type,
+                    notes,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to schedule interview');
+            }
+
+            const interview = await response.json();
+            console.log('Interview scheduled:', interview);
+
+            // Show success message
+            alert(`✅ Entretien ${type} planifié avec succès!\n\nDate: ${format(date, 'dd/MM/yyyy')}\nHeure: ${time}\nCandidat: ${candidate.firstName} ${candidate.lastName}`);
+
+            // Refresh candidate data to show the new interview in timeline
+            const candidateResponse = await fetch(`/api/candidates/${params.id}`);
+            if (candidateResponse.ok) {
+                const data = await candidateResponse.json();
+                setCandidate(data);
+            }
+        } catch (error) {
+            console.error("Failed to schedule interview:", error);
+            alert("❌ Erreur lors de la planification de l'entretien");
+        }
+    };
 
     if (loading) {
         return (
@@ -318,6 +359,7 @@ export default function CandidateDetailPage() {
                                 className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white shadow-lg hover:bg-blue-700"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
+                                onClick={() => setIsSchedulerOpen(true)}
                             >
                                 📅 Planifier Entretien
                             </motion.button>
@@ -397,6 +439,14 @@ export default function CandidateDetailPage() {
                     </motion.div>
                 </div>
             </div>
+
+            {/* Interview Scheduler Modal */}
+            <InterviewScheduler
+                isOpen={isSchedulerOpen}
+                onClose={() => setIsSchedulerOpen(false)}
+                onSchedule={handleScheduleInterview}
+                candidateName={`${candidate.firstName} ${candidate.lastName}`}
+            />
         </motion.div>
     );
 }
@@ -448,5 +498,14 @@ function TimelineItem({ icon, title, date, color, description, user }: { icon: s
                 )}
             </div>
         </motion.div>
+    );
+}
+
+// Add Interview Scheduler Modal at the component level
+function CandidateDetailPageWrapper() {
+    return (
+        <>
+            <CandidateDetailPage />
+        </>
     );
 }

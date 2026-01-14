@@ -12,70 +12,74 @@ import {
   StaggerItem,
   CardAnimation
 } from "@/components/animations/PageAnimations";
+import AnimatedBackground from "@/components/backgrounds/AnimatedBackground";
 
 export default function Home() {
   return (
-    <PageAnimationWrapper>
-      <StaggerContainer>
-        <StaggerItem className="mb-6">
-          <CardAnimation>
-            <DashboardFilters />
-          </CardAnimation>
-        </StaggerItem>
+    <>
+      <AnimatedBackground variant="gradient" />
+      <PageAnimationWrapper>
+        <StaggerContainer>
+          <StaggerItem className="mb-6">
+            <CardAnimation>
+              <DashboardFilters />
+            </CardAnimation>
+          </StaggerItem>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5">
-          {/* Column 1: Pipeline & Decision */}
-          <div className="flex flex-col gap-4 md:gap-6 2xl:gap-7.5">
-            <StaggerItem>
-              <CardAnimation className="h-full">
-                <RecruitmentPipeline />
-              </CardAnimation>
-            </StaggerItem>
-            <StaggerItem>
-              <CardAnimation className="h-full">
-                <FinalDecision />
-              </CardAnimation>
-            </StaggerItem>
-          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5">
+            {/* Column 1: Pipeline & Decision */}
+            <div className="flex flex-col gap-4 md:gap-6 2xl:gap-7.5">
+              <StaggerItem>
+                <CardAnimation className="h-full">
+                  <RecruitmentPipeline />
+                </CardAnimation>
+              </StaggerItem>
+              <StaggerItem>
+                <CardAnimation className="h-full">
+                  <FinalDecision />
+                </CardAnimation>
+              </StaggerItem>
+            </div>
 
-          {/* Column 2: Sources & Trend */}
-          <div className="flex flex-col gap-4 md:gap-6 2xl:gap-7.5">
-            <StaggerItem>
-              <CardAnimation className="h-full">
-                <ApplicationSources />
-              </CardAnimation>
-            </StaggerItem>
-            <StaggerItem>
-              <CardAnimation className="h-full">
-                <ApplicationsTrend />
-              </CardAnimation>
-            </StaggerItem>
-          </div>
+            {/* Column 2: Sources & Trend */}
+            <div className="flex flex-col gap-4 md:gap-6 2xl:gap-7.5">
+              <StaggerItem>
+                <CardAnimation className="h-full">
+                  <ApplicationSources />
+                </CardAnimation>
+              </StaggerItem>
+              <StaggerItem>
+                <CardAnimation className="h-full">
+                  <ApplicationsTrend />
+                </CardAnimation>
+              </StaggerItem>
+            </div>
 
-          {/* Column 3: Mode & Delay */}
-          <div className="flex flex-col gap-4 md:gap-6 2xl:gap-7.5">
-            <StaggerItem>
-              <CardAnimation className="h-full">
-                <RecruitmentMode />
-              </CardAnimation>
-            </StaggerItem>
-            <StaggerItem>
-              <CardAnimation className="h-full">
-                <DelayCompliance />
-              </CardAnimation>
-            </StaggerItem>
-          </div>
+            {/* Column 3: Mode & Delay */}
+            <div className="flex flex-col gap-4 md:gap-6 2xl:gap-7.5">
+              <StaggerItem>
+                <CardAnimation className="h-full">
+                  <RecruitmentMode />
+                </CardAnimation>
+              </StaggerItem>
+              <StaggerItem>
+                <CardAnimation className="h-full">
+                  <DelayCompliance />
+                </CardAnimation>
+              </StaggerItem>
+            </div>
 
-          {/* Column 4: Vacancy Stats (Cards & Radial) */}
-          <div className="flex flex-col gap-4 md:gap-6 2xl:gap-7.5">
-            <StaggerItem>
-              <CardAnimation className="h-full">
-                <VacancyStats />
-              </CardAnimation>
-            </StaggerItem>
+            {/* Column 4: Vacancy Stats (Cards & Radial) */}
+            <div className="flex flex-col gap-4 md:gap-6 2xl:gap-7.5">
+              <StaggerItem>
+                <CardAnimation className="h-full">
+                  <VacancyStats />
+                </CardAnimation>
+              </StaggerItem>
+            </div>
           </div>
-        </div>
-      </StaggerContainer>
-    </PageAnimationWrapper>
+        </StaggerContainer>
+      </PageAnimationWrapper>
+    </>
   );
 }

@@ -42,6 +42,9 @@ export default function VacantPositionsTable({ initialData, recruiters }: Vacant
     const [filterStatus, setFilterStatus] = useState("");
     const router = useRouter();
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
+
     const filteredData = data.filter((item) => {
         const matchesSearch =
             item.jobTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -51,6 +54,14 @@ export default function VacantPositionsTable({ initialData, recruiters }: Vacant
         const matchesStatus = filterStatus ? item.status === filterStatus : true;
         return matchesSearch && matchesDepartment && matchesStatus;
     });
+
+    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+    const paginatedData = filteredData.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
     const uniqueDepartments = Array.from(new Set(data.map((item) => item.service)));
     const uniqueStatuses = Array.from(new Set(data.map((item) => item.status)));
@@ -129,13 +140,19 @@ export default function VacantPositionsTable({ initialData, recruiters }: Vacant
                     placeholder="🔍 Search by ID, Title, Dept..."
                     className="w-full rounded-md border border-gray-300 px-4 py-2 dark:border-dark-3 dark:bg-dark-2 transition-all focus:ring-2 focus:ring-primary"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1); // Reset to first page
+                    }}
                     whileFocus={{ scale: 1.02, borderColor: "#5750F1" }}
                 />
                 <motion.select
                     className="w-full rounded-md border border-gray-300 px-4 py-2 dark:border-dark-3 dark:bg-dark-2 md:w-48 transition-all focus:ring-2 focus:ring-primary"
                     value={filterDepartment}
-                    onChange={(e) => setFilterDepartment(e.target.value)}
+                    onChange={(e) => {
+                        setFilterDepartment(e.target.value);
+                        setCurrentPage(1);
+                    }}
                     whileFocus={{ scale: 1.02 }}
                 >
                     <option value="">All Departments</option>
@@ -148,7 +165,10 @@ export default function VacantPositionsTable({ initialData, recruiters }: Vacant
                 <motion.select
                     className="w-full rounded-md border border-gray-300 px-4 py-2 dark:border-dark-3 dark:bg-dark-2 md:w-48 transition-all focus:ring-2 focus:ring-primary"
                     value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
+                    onChange={(e) => {
+                        setFilterStatus(e.target.value);
+                        setCurrentPage(1);
+                    }}
                     whileFocus={{ scale: 1.02 }}
                 >
                     <option value="">All Statuses</option>
@@ -184,9 +204,9 @@ export default function VacantPositionsTable({ initialData, recruiters }: Vacant
                             <th className="px-4 py-4 font-medium text-dark dark:text-white">Actions</th>
                         </tr>
                     </motion.thead>
-                    <AnimatePresence>
+                    <AnimatePresence mode="wait">
                         <tbody>
-                            {filteredData.map((item, index) => (
+                            {paginatedData.map((item, index) => (
                                 <motion.tr
                                     key={item.id}
                                     className="border-b border-stroke dark:border-dark-3 transition-colors cursor-pointer"
@@ -200,9 +220,9 @@ export default function VacantPositionsTable({ initialData, recruiters }: Vacant
                                         stiffness: 100
                                     }}
                                     whileHover={{
-                                        backgroundColor: "rgba(87, 80, 241, 0.1)",
-                                        scale: 1.01,
-                                        boxShadow: "0 4px 12px rgba(87, 80, 241, 0.15)"
+                                        backgroundColor: "rgba(87, 80, 241, 0.05)",
+                                        scale: 1.002,
+                                        boxShadow: "0 2px 10px rgba(0,0,0,0.05)"
                                     }}
                                 >
                                     <motion.td
@@ -248,10 +268,10 @@ export default function VacantPositionsTable({ initialData, recruiters }: Vacant
                                     <td className="px-4 py-4">
                                         <motion.span
                                             className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${item.status === "PENDING"
-                                                    ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300"
-                                                    : item.status === "APPROVED"
-                                                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-                                                        : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                                ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300"
+                                                : item.status === "APPROVED"
+                                                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                                                    : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
                                                 }`}
                                             whileHover={{ scale: 1.2, rotate: 5 }}
                                             whileTap={{ scale: 0.9 }}
@@ -260,16 +280,24 @@ export default function VacantPositionsTable({ initialData, recruiters }: Vacant
                                         </motion.span>
                                     </td>
                                     <td className="px-4 py-4">
-                                        <Link href={`/vacant-positions/edit/${item.id}`}>
-                                            <motion.span
-                                                className="text-primary hover:underline cursor-pointer font-medium"
-                                                whileHover={{ scale: 1.2, x: 10, color: "#3730a3" }}
-                                                whileTap={{ scale: 0.9 }}
-                                                transition={{ type: "spring", stiffness: 400 }}
-                                            >
-                                                ✏️ Edit
-                                            </motion.span>
-                                        </Link>
+                                        <div className="flex items-center gap-2">
+                                            <Link href={`/vacant-positions/${item.id}`}>
+                                                <motion.span
+                                                    className="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary cursor-pointer font-medium text-sm"
+                                                    whileHover={{ scale: 1.1 }}
+                                                >
+                                                    👁️ View
+                                                </motion.span>
+                                            </Link>
+                                            <Link href={`/vacant-positions/edit/${item.id}`}>
+                                                <motion.span
+                                                    className="text-primary hover:underline cursor-pointer font-medium text-sm"
+                                                    whileHover={{ scale: 1.1, x: 2 }}
+                                                >
+                                                    ✏️ Edit
+                                                </motion.span>
+                                            </Link>
+                                        </div>
                                     </td>
                                 </motion.tr>
                             ))}
@@ -277,6 +305,50 @@ export default function VacantPositionsTable({ initialData, recruiters }: Vacant
                     </AnimatePresence>
                 </table>
             </motion.div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="flex justify-between items-center mt-4">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                        Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredData.length)}</span> of <span className="font-medium">{filteredData.length}</span> results
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => paginate(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === 1
+                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600"
+                                    : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 dark:bg-gray-800 dark:text-white dark:border-gray-700 dark:hover:bg-gray-700"
+                                }`}
+                        >
+                            Previous
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => (
+                            <button
+                                key={i + 1}
+                                onClick={() => paginate(i + 1)}
+                                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === i + 1
+                                        ? "bg-primary text-white"
+                                        : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 dark:bg-gray-800 dark:text-white dark:border-gray-700 dark:hover:bg-gray-700"
+                                    }`}
+                            >
+                                {i + 1}
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => paginate(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === totalPages
+                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600"
+                                    : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 dark:bg-gray-800 dark:text-white dark:border-gray-700 dark:hover:bg-gray-700"
+                                }`}
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            )}
+
 
             {filteredData.length === 0 && (
                 <motion.div
