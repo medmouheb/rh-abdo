@@ -9,7 +9,7 @@ export const NAV_DATA = [
         icon: Icons.HomeIcon,
         items: [
           {
-            title: "DashboardRecruitment",
+            title: "Vue d'ensemble",
             url: "/",
           },
         ],
@@ -19,41 +19,6 @@ export const NAV_DATA = [
         url: "/calendar",
         icon: Icons.Calendar,
         items: [],
-      },
-      {
-        title: "Forms",
-        icon: Icons.Alphabet,
-        items: [
-          {
-            title: "Form Elements",
-            url: "/forms/form-elements",
-          },
-          {
-            title: "Form Layout",
-            url: "/forms/form-layout",
-          },
-        ],
-      },
-      {
-        title: "Tables",
-        url: "/tables",
-        icon: Icons.Table,
-        items: [
-          {
-            title: "Tables",
-            url: "/tables",
-          },
-        ],
-      },
-      {
-        title: "Pages",
-        icon: Icons.Alphabet,
-        items: [
-          {
-            title: "Settings",
-            url: "/pages/settings",
-          },
-        ],
       },
     ],
   },
@@ -92,21 +57,9 @@ export const NAV_DATA = [
       },
     ],
   },
-
   {
-    label: "OTHERS",
+    label: "SETTINGS",
     items: [
-      {
-        title: "Charts",
-        icon: Icons.PieChart,
-        items: [
-          {
-            title: "Basic Chart",
-            url: "/charts/basic-chart",
-          },
-        ],
-      },
-     
       {
         title: "Authentication",
         icon: Icons.Authentication,

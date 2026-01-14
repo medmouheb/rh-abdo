@@ -8,6 +8,15 @@ import { getCandidates, getCandidateStatistics } from "@/app/actions/candidates"
 import type { CandidateWithRelations } from "@/app/actions/candidates";
 import { format } from "date-fns";
 import * as XLSX from 'xlsx';
+import {
+    PageAnimationWrapper,
+    CardAnimation,
+    StaggerContainer,
+    StaggerItem,
+    ScaleButton,
+    FadeIn,
+    SlideIn
+} from "@/components/animations/PageAnimations";
 
 const STATUS_COLORS = {
     RECEIVED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
@@ -41,6 +50,10 @@ export default function CandidatesPage() {
     const [filterStatus, setFilterStatus] = useState("");
     const [filterDepartment, setFilterDepartment] = useState("");
     const [filterSource, setFilterSource] = useState("");
+    const [filterWorkSite, setFilterWorkSite] = useState("");
+    const [filterEducation, setFilterEducation] = useState("");
+    const [filterMinExp, setFilterMinExp] = useState("");
+    const [filterMaxSalary, setFilterMaxSalary] = useState("");
 
     useEffect(() => {
         async function fetchData() {
@@ -62,6 +75,12 @@ export default function CandidatesPage() {
         fetchData();
     }, []);
 
+    const uniqueDepartments = Array.from(new Set(candidates.map(c => c.department).filter(Boolean)));
+    const uniqueSources = Array.from(new Set(candidates.map(c => c.source).filter(Boolean)));
+    const uniqueWorkSites = Array.from(new Set(candidates.map(c => c.workSite).filter(Boolean)));
+    const uniqueEducationLevels = Array.from(new Set(candidates.map(c => c.educationLevel).filter(Boolean)));
+
+
     const filteredCandidates = candidates.filter((candidate) => {
         const matchesSearch =
             candidate.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -72,12 +91,13 @@ export default function CandidatesPage() {
         const matchesStatus = filterStatus ? candidate.status === filterStatus : true;
         const matchesDepartment = filterDepartment ? candidate.department === filterDepartment : true;
         const matchesSource = filterSource ? candidate.source === filterSource : true;
+        const matchesWorkSite = filterWorkSite ? candidate.workSite === filterWorkSite : true;
+        const matchesEducation = filterEducation ? candidate.educationLevel === filterEducation : true;
+        const matchesMinExp = filterMinExp ? (candidate.yearsOfExperience || 0) >= parseInt(filterMinExp) : true;
+        const matchesMaxSalary = filterMaxSalary ? (candidate.salaryExpectation || 0) <= parseInt(filterMaxSalary) : true;
 
-        return matchesSearch && matchesStatus && matchesDepartment && matchesSource;
+        return matchesSearch && matchesStatus && matchesDepartment && matchesSource && matchesWorkSite && matchesEducation && matchesMinExp && matchesMaxSalary;
     });
-
-    const uniqueDepartments = Array.from(new Set(candidates.map(c => c.department).filter(Boolean)));
-    const uniqueSources = Array.from(new Set(candidates.map(c => c.source).filter(Boolean)));
 
     const handleExportExcel = () => {
         const ws = XLSX.utils.json_to_sheet(filteredCandidates.map(c => ({
@@ -110,172 +130,160 @@ export default function CandidatesPage() {
     }
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-        >
+        <PageAnimationWrapper>
             <Breadcrumb pageName="Gestion des Candidats" />
 
             {/* Statistics Cards */}
             {statistics && (
-                <motion.div
-                    className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                >
-                    <motion.div
-                        className="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-dark"
-                        whileHover={{ scale: 1.02, y: -5 }}
-                    >
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Total Candidats</p>
-                                <h3 className="text-3xl font-bold text-primary">{statistics.total}</h3>
+                <StaggerContainer className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6" delay={0.1}>
+                    <StaggerItem>
+                        <CardAnimation className="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-dark h-full">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Candidats</p>
+                                    <h3 className="text-3xl font-bold text-primary">{statistics.total}</h3>
+                                </div>
+                                <div className="text-4xl">👥</div>
                             </div>
-                            <div className="text-4xl">👥</div>
-                        </div>
-                    </motion.div>
+                        </CardAnimation>
+                    </StaggerItem>
 
-                    <motion.div
-                        className="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-dark"
-                        whileHover={{ scale: 1.02, y: -5 }}
-                    >
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">En Cours</p>
-                                <h3 className="text-3xl font-bold text-yellow-600">{statistics.inInterview}</h3>
+                    <StaggerItem>
+                        <CardAnimation className="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-dark h-full">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">En Cours</p>
+                                    <h3 className="text-3xl font-bold text-yellow-600">{statistics.inInterview}</h3>
+                                </div>
+                                <div className="text-4xl">⏳</div>
                             </div>
-                            <div className="text-4xl">⏳</div>
-                        </div>
-                    </motion.div>
+                        </CardAnimation>
+                    </StaggerItem>
 
-                    <motion.div
-                        className="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-dark"
-                        whileHover={{ scale: 1.02, y: -5 }}
-                    >
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Embauchés</p>
-                                <h3 className="text-3xl font-bold text-green-600">{statistics.hired}</h3>
+                    <StaggerItem>
+                        <CardAnimation className="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-dark h-full">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Embauchés</p>
+                                    <h3 className="text-3xl font-bold text-green-600">{statistics.hired}</h3>
+                                </div>
+                                <div className="text-4xl">✅</div>
                             </div>
-                            <div className="text-4xl">✅</div>
-                        </div>
-                    </motion.div>
+                        </CardAnimation>
+                    </StaggerItem>
 
-                    <motion.div
-                        className="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-dark"
-                        whileHover={{ scale: 1.02, y: -5 }}
-                    >
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Taux de Conversion</p>
-                                <h3 className="text-3xl font-bold text-blue-600">{statistics.conversionRate}%</h3>
+                    <StaggerItem>
+                        <CardAnimation className="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-dark h-full">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Taux de Conversion</p>
+                                    <h3 className="text-3xl font-bold text-blue-600">{statistics.conversionRate}%</h3>
+                                </div>
+                                <div className="text-4xl">📊</div>
                             </div>
-                            <div className="text-4xl">📊</div>
-                        </div>
-                    </motion.div>
-                </motion.div>
+                        </CardAnimation>
+                    </StaggerItem>
+                </StaggerContainer>
             )}
 
             {/* Actions Bar */}
-            <motion.div
-                className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
-                initial={{ opacity: 0, x: -50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-            >
+            <SlideIn direction="left" delay={0.2} className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="text-2xl font-bold text-dark dark:text-white">
                     📋 Liste des Candidats
                 </h2>
                 <div className="flex gap-2">
-                    <motion.button
+                    <ScaleButton
                         onClick={handleExportExcel}
                         className="inline-flex items-center justify-center rounded-lg bg-green-600 px-6 py-3 text-center font-medium text-white shadow-lg hover:bg-green-700"
-                        whileHover={{ scale: 1.05, rotate: -2 }}
-                        whileTap={{ scale: 0.95 }}
                     >
                         📊 Export Excel
-                    </motion.button>
+                    </ScaleButton>
                     <Link href="/candidates/create">
-                        <motion.span
+                        <ScaleButton
                             className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-3 text-center font-medium text-white shadow-lg hover:bg-opacity-90"
-                            whileHover={{ scale: 1.05, rotate: 2 }}
-                            whileTap={{ scale: 0.95 }}
                         >
                             ➕ Nouveau Candidat
-                        </motion.span>
+                        </ScaleButton>
                     </Link>
                 </div>
-            </motion.div>
+            </SlideIn>
 
             {/* Filters */}
-            <motion.div
-                className="mb-6 rounded-lg bg-white p-6 shadow-lg dark:bg-gray-dark"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-            >
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                    <motion.input
+            <FadeIn delay={0.3} className="mb-6 rounded-lg bg-white p-6 shadow-lg dark:bg-gray-dark">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-4 lg:grid-cols-6 mb-4">
+                    <input
                         type="text"
                         placeholder="🔍 Rechercher..."
-                        className="w-full rounded-lg border-2 border-stroke bg-transparent px-4 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
+                        className="w-full rounded-lg border-2 border-stroke bg-transparent px-4 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2 md:col-span-2"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        whileFocus={{ scale: 1.02 }}
                     />
-                    <motion.select
+                    <select
                         className="w-full rounded-lg border-2 border-stroke bg-transparent px-4 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
-                        whileFocus={{ scale: 1.02 }}
                     >
                         <option value="">Tous les statuts</option>
                         {Object.entries(STATUS_LABELS).map(([key, label]) => (
                             <option key={key} value={key}>{label}</option>
                         ))}
-                    </motion.select>
-                    <motion.select
+                    </select>
+                    <select
                         className="w-full rounded-lg border-2 border-stroke bg-transparent px-4 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
                         value={filterDepartment}
                         onChange={(e) => setFilterDepartment(e.target.value)}
-                        whileFocus={{ scale: 1.02 }}
                     >
-                        <option value="">Tous les départements</option>
+                        <option value="">Département</option>
                         {uniqueDepartments.map((dept) => (
                             <option key={dept} value={dept}>{dept}</option>
                         ))}
-                    </motion.select>
-                    <motion.select
+                    </select>
+                    <select
                         className="w-full rounded-lg border-2 border-stroke bg-transparent px-4 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                        value={filterSource}
-                        onChange={(e) => setFilterSource(e.target.value)}
-                        whileFocus={{ scale: 1.02 }}
+                        value={filterWorkSite}
+                        onChange={(e) => setFilterWorkSite(e.target.value)}
                     >
-                        <option value="">Toutes les sources</option>
-                        {uniqueSources.map((source) => (
-                            <option key={source} value={source}>{source}</option>
+                        <option value="">Site</option>
+                        {uniqueWorkSites.map((site) => (
+                            <option key={site} value={site}>{site}</option>
                         ))}
-                    </motion.select>
+                    </select>
+
+                    <select
+                        className="w-full rounded-lg border-2 border-stroke bg-transparent px-4 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
+                        value={filterEducation}
+                        onChange={(e) => setFilterEducation(e.target.value)}
+                    >
+                        <option value="">Niveau d'étude</option>
+                        {uniqueEducationLevels.map((level) => (
+                            <option key={level} value={level}>{level}</option>
+                        ))}
+                    </select>
                 </div>
-            </motion.div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                    <input
+                        type="number"
+                        placeholder="Années Exp Min"
+                        className="w-full rounded-lg border-2 border-stroke bg-transparent px-4 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
+                        value={filterMinExp}
+                        onChange={(e) => setFilterMinExp(e.target.value)}
+                    />
+                    <input
+                        type="number"
+                        placeholder="Salaire Max Attendue"
+                        className="w-full rounded-lg border-2 border-stroke bg-transparent px-4 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
+                        value={filterMaxSalary}
+                        onChange={(e) => setFilterMaxSalary(e.target.value)}
+                    />
+                </div>
+            </FadeIn>
 
             {/* Table */}
-            <motion.div
-                className="rounded-lg bg-white shadow-lg dark:bg-gray-dark overflow-hidden"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.4 }}
-            >
+            <SlideIn direction="up" delay={0.4} className="rounded-lg bg-white shadow-lg dark:bg-gray-dark overflow-hidden">
                 <div className="max-w-full overflow-x-auto">
                     <table className="w-full table-auto">
-                        <motion.thead
-                            initial={{ y: -20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{ delay: 0.5 }}
-                        >
+                        <thead>
                             <tr className="bg-gradient-to-r from-primary/10 to-primary/5 text-left dark:bg-dark-2">
                                 <th className="px-4 py-4 font-medium text-dark dark:text-white">ID</th>
                                 <th className="px-4 py-4 font-medium text-dark dark:text-white">Candidat</th>
@@ -286,82 +294,73 @@ export default function CandidatesPage() {
                                 <th className="px-4 py-4 font-medium text-dark dark:text-white">Statut</th>
                                 <th className="px-4 py-4 font-medium text-dark dark:text-white">Actions</th>
                             </tr>
-                        </motion.thead>
-                        <AnimatePresence>
-                            <tbody>
-                                {filteredCandidates.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={8} className="py-12 text-center">
-                                            <motion.p
-                                                className="text-gray-500 dark:text-gray-400 text-lg"
-                                                animate={{ y: [0, -10, 0] }}
-                                                transition={{ duration: 2, repeat: Infinity }}
-                                            >
-                                                Aucun candidat trouvé 🔍
-                                            </motion.p>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    filteredCandidates.map((candidate, index) => (
-                                        <motion.tr
-                                            key={candidate.id}
-                                            className="border-b border-stroke dark:border-dark-3"
-                                            initial={{ opacity: 0, x: -50 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: index * 0.05, duration: 0.3 }}
-                                            whileHover={{
-                                                backgroundColor: "rgba(87, 80, 241, 0.05)",
-                                                scale: 1.01
-                                            }}
+                        </thead>
+                        <tbody>
+                            {filteredCandidates.length === 0 ? (
+                                <tr>
+                                    <td colSpan={8} className="py-12 text-center">
+                                        <motion.p
+                                            className="text-gray-500 dark:text-gray-400 text-lg"
+                                            animate={{ y: [0, -10, 0] }}
+                                            transition={{ duration: 2, repeat: Infinity }}
                                         >
-                                            <motion.td
-                                                className="px-4 py-4 font-semibold dark:text-white"
-                                                whileHover={{ scale: 1.1, color: "#5750F1" }}
+                                            Aucun candidat trouvé 🔍
+                                        </motion.p>
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredCandidates.map((candidate, index) => (
+                                    <motion.tr
+                                        key={candidate.id}
+                                        className="border-b border-stroke dark:border-dark-3"
+                                        initial={{ opacity: 0, x: -20 }}
+                                        whileInView={{ opacity: 1, x: 0 }}
+                                        viewport={{ once: true }}
+                                        transition={{ delay: index * 0.05 }}
+                                        whileHover={{
+                                            backgroundColor: "rgba(87, 80, 241, 0.05)",
+                                            scale: 1.01
+                                        }}
+                                    >
+                                        <td className="px-4 py-4 font-semibold dark:text-white">
+                                            #{candidate.id}
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <div>
+                                                <p className="font-medium text-dark dark:text-white">
+                                                    {candidate.firstName} {candidate.lastName}
+                                                </p>
+                                                <p className="text-sm text-gray-500">{candidate.email}</p>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-4 dark:text-white">{candidate.positionAppliedFor}</td>
+                                        <td className="px-4 py-4 dark:text-white">{candidate.department || "-"}</td>
+                                        <td className="px-4 py-4 dark:text-white">{candidate.source || "-"}</td>
+                                        <td className="px-4 py-4 dark:text-white text-sm">
+                                            {format(new Date(candidate.createdAt), "dd/MM/yyyy")}
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <span
+                                                className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${STATUS_COLORS[candidate.status as keyof typeof STATUS_COLORS]
+                                                    }`}
                                             >
-                                                #{candidate.id}
-                                            </motion.td>
-                                            <td className="px-4 py-4">
-                                                <motion.div whileHover={{ x: 5 }}>
-                                                    <p className="font-medium text-dark dark:text-white">
-                                                        {candidate.firstName} {candidate.lastName}
-                                                    </p>
-                                                    <p className="text-sm text-gray-500">{candidate.email}</p>
-                                                </motion.div>
-                                            </td>
-                                            <td className="px-4 py-4 dark:text-white">{candidate.positionAppliedFor}</td>
-                                            <td className="px-4 py-4 dark:text-white">{candidate.department || "-"}</td>
-                                            <td className="px-4 py-4 dark:text-white">{candidate.source || "-"}</td>
-                                            <td className="px-4 py-4 dark:text-white text-sm">
-                                                {format(new Date(candidate.createdAt), "dd/MM/yyyy")}
-                                            </td>
-                                            <td className="px-4 py-4">
-                                                <motion.span
-                                                    className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${STATUS_COLORS[candidate.status as keyof typeof STATUS_COLORS]
-                                                        }`}
-                                                    whileHover={{ scale: 1.1, rotate: 5 }}
-                                                >
-                                                    {STATUS_LABELS[candidate.status as keyof typeof STATUS_LABELS]}
-                                                </motion.span>
-                                            </td>
-                                            <td className="px-4 py-4">
-                                                <Link href={`/candidates/${candidate.id}`}>
-                                                    <motion.span
-                                                        className="text-primary hover:underline cursor-pointer font-medium"
-                                                        whileHover={{ scale: 1.2, x: 10 }}
-                                                        whileTap={{ scale: 0.9 }}
-                                                    >
-                                                        👁️ Voir
-                                                    </motion.span>
-                                                </Link>
-                                            </td>
-                                        </motion.tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </AnimatePresence>
+                                                {STATUS_LABELS[candidate.status as keyof typeof STATUS_LABELS]}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <Link href={`/candidates/${candidate.id}`}>
+                                                <ScaleButton className="text-primary hover:underline font-medium">
+                                                    👁️ Voir
+                                                </ScaleButton>
+                                            </Link>
+                                        </td>
+                                    </motion.tr>
+                                ))
+                            )}
+                        </tbody>
                     </table>
                 </div>
-            </motion.div>
-        </motion.div>
+            </SlideIn>
+        </PageAnimationWrapper>
     );
 }

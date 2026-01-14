@@ -109,7 +109,24 @@ model Candidate {
   level              String?   // Level of the position (Junior, Senior, etc.)
   yearsOfExperience  Int?
   language           String?   // Language requirement
-  source             String?   // "WEBSITE", "LINKEDIN", "EMAIL", "OTHER"
+  source             String?   // "WEBSITE", "LINKEDIN", "EMAIL", "OTHER" (Consider using recruitmentMode)
+  recruitmentMode    String?   // "INTERNAL", "EXTERNAL"
+  workSite           String?   // "TT", "TTG"
+  
+  // New Enhanced Fields
+  educationLevel     String?   // "Bac/ BTP", "Bac+2 / BTS", etc.
+  familySituation    String?   // "Single", "Married", etc.
+  studySpecialty     String?   // Academic specialty
+  
+  // Financial & Contract
+  currentSalary      Float?
+  salaryExpectation  Float?
+  proposedSalary     Float?
+  noticePeriod       String?
+  
+  // Opinions
+  hrOpinion          String?   // "FAVORABLE", "UNFAVORABLE", etc.
+  managerOpinion     String?   // "FAVORABLE", "UNFAVORABLE", etc.
   
   // Documents
   cvPath             String?

@@ -79,9 +79,6 @@ Le module Candidats permet une gestion complète du processus de recrutement, de
 - **Date de naissance**: Date
 - **Genre**: Masculin / Féminin
 - **Adresse**: Adresse complète
-- **Code postal**: Code postal
-- **Ville**: Ville
-- **Pays**: Pays
 
 #### Informations Professionnelles
 - **Poste visé**: Sélection depuis postes vacants
@@ -89,7 +86,7 @@ Le module Candidats permet une gestion complète du processus de recrutement, de
 - **Spécialité**: Spécialité du poste
 - **Niveau**: Niveau du poste
 - **Experience**: Nombre d'années d'expérience
-- **Langue**: Langue du poste
+
 
 #### Origine de la Candidature
 - **Source**: Site web, LinkedIn, Email, Autre
@@ -97,6 +94,13 @@ Le module Candidats permet une gestion complète du processus de recrutement, de
 - **Statut initial**: EN_COURS, SHORTLISTÉ
 - **Statut final**: EMBAUCHÉ, NON_RETENU
 - **Statut**: VACANT, EMBAUCHÉ, EN_COURS, TERMINÉ, ANNULÉ, SUSPENDU
+  salaire actuel
+  salaire proposé  prétention salariale
+  pré avies
+  avis N+1
+  avis RH
+  - ** décision**: EMBAUCHÉ, NON_RETENU
+  
 
 #### Documents
 - **CV**: Upload PDF/DOCX

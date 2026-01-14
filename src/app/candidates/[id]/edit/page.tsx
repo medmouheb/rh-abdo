@@ -2,19 +2,19 @@
 
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { createCandidate } from "@/app/actions/candidates";
+import { updateCandidate, getCandidate } from "@/app/actions/candidates";
 import { getVacantPositions } from "@/app/actions/vacant-positions";
 import Flatpickr from "react-flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
 
-export default function CreateCandidatePage() {
+export default function EditCandidatePage() {
     const router = useRouter();
+    const params = useParams();
     const [vacantPositions, setVacantPositions] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [cvFile, setCvFile] = useState<File | null>(null);
-    const [cvPreview, setCvPreview] = useState<string>("");
+    const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         // Personal Info
         firstName: "",
@@ -40,6 +40,7 @@ export default function CreateCandidatePage() {
         source: "WEBSITE",
         hiringRequestId: 0,
         recruiterComments: "",
+        status: "RECEIVED",
 
         // Extended Info
         educationLevel: "",
@@ -56,96 +57,163 @@ export default function CreateCandidatePage() {
     });
 
     useEffect(() => {
-        async function fetchPositions() {
-            const result = await getVacantPositions();
-            if (result.data) {
-                setVacantPositions(result.data);
+        async function fetchData() {
+            try {
+                const [positionsResult, candidateResult] = await Promise.all([
+                    getVacantPositions(),
+                    getCandidate(parseInt(params.id as string))
+                ]);
+
+                if (positionsResult.data) {
+                    setVacantPositions(positionsResult.data);
+                }
+
+                if (candidateResult.success && candidateResult.data) {
+                    const candidate = candidateResult.data;
+                    setFormData({
+                        firstName: candidate.firstName,
+                        lastName: candidate.lastName,
+                        email: candidate.email,
+                        phone: candidate.phone || "",
+                        birthDate: candidate.birthDate ? new Date(candidate.birthDate) : new Date(),
+                        gender: candidate.gender,
+                        address: candidate.address || "",
+                        postalCode: candidate.postalCode || "",
+                        city: candidate.city || "",
+                        country: candidate.country || "",
+
+                        positionAppliedFor: candidate.positionAppliedFor,
+                        department: candidate.department || "",
+                        specialty: candidate.specialty || "",
+                        level: candidate.level || "",
+                        yearsOfExperience: candidate.yearsOfExperience || 0,
+                        language: candidate.language || "",
+
+                        source: candidate.source || "WEBSITE",
+                        hiringRequestId: candidate.hiringRequestId || 0,
+                        recruiterComments: candidate.recruiterComments || "",
+                        status: candidate.status,
+
+                        educationLevel: candidate.educationLevel || "",
+                        familySituation: candidate.familySituation || "",
+                        studySpecialty: candidate.studySpecialty || "",
+                        currentSalary: candidate.currentSalary || 0,
+                        salaryExpectation: candidate.salaryExpectation || 0,
+                        proposedSalary: candidate.proposedSalary || 0,
+                        noticePeriod: candidate.noticePeriod || "",
+                        hrOpinion: candidate.hrOpinion || "",
+                        managerOpinion: candidate.managerOpinion || "",
+                        recruitmentMode: candidate.recruitmentMode || "EXTERNAL",
+                        workSite: candidate.workSite || "",
+                    });
+                } else {
+                    alert("Candidat non trouvé");
+                    router.push("/candidates");
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                alert("Erreur lors du chargement des données");
+            } finally {
+                setLoading(false);
             }
         }
-        fetchPositions();
-    }, []);
+        fetchData();
+    }, [params.id, router]);
 
     const handleChange = (field: string, value: any) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
+        let newValue = value;
 
-        // Auto-fill department when position is selected
+        // Handle number inputs safety
+        if (['yearsOfExperience', 'currentSalary', 'salaryExpectation', 'proposedSalary'].includes(field)) {
+            newValue = isNaN(value) ? 0 : value;
+        }
+
+        setFormData((prev) => ({ ...prev, [field]: newValue }));
+
         if (field === "hiringRequestId" && value) {
             const selectedPosition = vacantPositions.find(p => p.id === parseInt(value));
             if (selectedPosition) {
                 setFormData(prev => ({
                     ...prev,
                     department: selectedPosition.service,
-                    positionAppliedFor: selectedPosition.jobTitle,
+
                 }));
             }
         }
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            // Validate file type
-            const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-            if (!validTypes.includes(file.type)) {
-                alert("Format de fichier non valide. Veuillez uploader un PDF ou DOCX.");
-                return;
-            }
-
-            // Validate file size (max 5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                alert("Le fichier est trop volumineux. Taille maximale: 5MB");
-                return;
-            }
-
-            setCvFile(file);
-            setCvPreview(file.name);
-        }
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
+        setSubmitting(true);
 
         try {
-            // First create the candidate
-            const result = await createCandidate({
-                ...formData,
-                hiringRequestId: formData.hiringRequestId || undefined,
-            });
+            const payload = {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                email: formData.email,
+                positionAppliedFor: formData.positionAppliedFor,
+                status: formData.status,
 
-            if (result.success && result.data) {
-                // Then upload CV if provided
-                if (cvFile) {
-                    const uploadFormData = new FormData();
-                    uploadFormData.append("file", cvFile);
+                // Optional Strings -> null if empty or undefined
+                phone: formData.phone || null,
+                department: formData.department || null,
+                specialty: formData.specialty || null,
+                studySpecialty: formData.studySpecialty || null,
+                level: formData.level || null,
+                educationLevel: formData.educationLevel || null,
+                language: formData.language || null,
+                source: formData.source || null,
+                recruitmentMode: formData.recruitmentMode || null,
+                workSite: formData.workSite || null,
+                noticePeriod: formData.noticePeriod || null,
+                hrOpinion: formData.hrOpinion || null,
+                managerOpinion: formData.managerOpinion || null,
+                recruiterComments: formData.recruiterComments || null,
+                familySituation: formData.familySituation || null,
+                address: formData.address || null,
+                postalCode: formData.postalCode || null,
+                city: formData.city || null,
+                country: formData.country || null,
+                gender: formData.gender || null,
 
-                    const uploadResponse = await fetch(`/api/upload/${result.data.id}/cv`, {
-                        method: "POST",
-                        body: uploadFormData,
-                    });
+                // Numbers -> null if 0 or NaN (optional)
+                yearsOfExperience: formData.yearsOfExperience || null,
+                currentSalary: formData.currentSalary || null,
+                salaryExpectation: formData.salaryExpectation || null,
+                proposedSalary: formData.proposedSalary || null,
+                hiringRequestId: formData.hiringRequestId ? parseInt(formData.hiringRequestId.toString()) : null,
 
-                    if (uploadResponse.ok) {
-                        const { path } = await uploadResponse.json();
-                        // Update candidate with CV path
-                        await fetch(`/api/candidates/${result.data.id}`, {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ cvPath: path }),
-                        });
-                    }
-                }
+                // Dates
+                birthDate: formData.birthDate ? new Date(formData.birthDate).toISOString() : null,
+            };
 
-                router.push("/candidates");
+            const result = await updateCandidate(parseInt(params.id as string), payload);
+
+            if (result.success) {
+                router.push(`/candidates/${params.id}`);
             } else {
-                alert("Erreur lors de la création du candidat");
+                console.error("Update failed:", result.error);
+                alert("Erreur lors de la mise à jour du candidat: " + (result.error || "Erreur inconnue"));
             }
         } catch (error) {
-            console.error("Error creating candidate:", error);
-            alert("Erreur lors de la création du candidat");
+            console.error("Error updating candidate:", error);
+            alert("Erreur lors de la mise à jour du candidat");
         } finally {
-            setLoading(false);
+            setSubmitting(false);
         }
     };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <motion.div
+                    className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
+            </div>
+        );
+    }
 
     return (
         <motion.div
@@ -153,7 +221,7 @@ export default function CreateCandidatePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
         >
-            <Breadcrumb pageName="Nouveau Candidat" />
+            <Breadcrumb pageName="Modifier Candidat" />
 
             <motion.div
                 className="rounded-lg border border-stroke bg-white shadow-lg dark:border-dark-3 dark:bg-gray-dark p-6 sm:p-8"
@@ -168,7 +236,7 @@ export default function CreateCandidatePage() {
                     transition={{ delay: 0.3 }}
                 >
                     <h3 className="font-bold text-dark dark:text-white text-2xl">
-                        👤 Informations du Candidat
+                        📝 Modifier les Informations
                     </h3>
                 </motion.div>
 
@@ -187,14 +255,12 @@ export default function CreateCandidatePage() {
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
                                     Prénom <span className="text-red">*</span>
                                 </label>
-                                <motion.input
+                                <input
                                     type="text"
                                     required
                                     value={formData.firstName}
                                     onChange={(e) => handleChange("firstName", e.target.value)}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="Ex: Ahmed"
-                                    whileFocus={{ scale: 1.02 }}
                                 />
                             </div>
 
@@ -202,14 +268,12 @@ export default function CreateCandidatePage() {
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
                                     Nom <span className="text-red">*</span>
                                 </label>
-                                <motion.input
+                                <input
                                     type="text"
                                     required
                                     value={formData.lastName}
                                     onChange={(e) => handleChange("lastName", e.target.value)}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="Ex: Ben Ali"
-                                    whileFocus={{ scale: 1.02 }}
                                 />
                             </div>
 
@@ -217,14 +281,12 @@ export default function CreateCandidatePage() {
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
                                     Email <span className="text-red">*</span>
                                 </label>
-                                <motion.input
+                                <input
                                     type="email"
                                     required
                                     value={formData.email}
                                     onChange={(e) => handleChange("email", e.target.value)}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="exemple@email.com"
-                                    whileFocus={{ scale: 1.02 }}
                                 />
                             </div>
 
@@ -232,13 +294,11 @@ export default function CreateCandidatePage() {
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
                                     Téléphone
                                 </label>
-                                <motion.input
+                                <input
                                     type="tel"
                                     value={formData.phone}
                                     onChange={(e) => handleChange("phone", e.target.value)}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="+216 XX XXX XXX"
-                                    whileFocus={{ scale: 1.02 }}
                                 />
                             </div>
 
@@ -288,13 +348,11 @@ export default function CreateCandidatePage() {
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
                                     Adresse
                                 </label>
-                                <motion.input
+                                <input
                                     type="text"
                                     value={formData.address}
                                     onChange={(e) => handleChange("address", e.target.value)}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="Adresse complète"
-                                    whileFocus={{ scale: 1.02 }}
                                 />
                             </div>
 
@@ -302,13 +360,11 @@ export default function CreateCandidatePage() {
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
                                     Code Postal
                                 </label>
-                                <motion.input
+                                <input
                                     type="text"
                                     value={formData.postalCode}
                                     onChange={(e) => handleChange("postalCode", e.target.value)}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="Ex: 1000"
-                                    whileFocus={{ scale: 1.02 }}
                                 />
                             </div>
 
@@ -316,13 +372,11 @@ export default function CreateCandidatePage() {
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
                                     Ville
                                 </label>
-                                <motion.input
+                                <input
                                     type="text"
                                     value={formData.city}
                                     onChange={(e) => handleChange("city", e.target.value)}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="Ex: Tunis"
-                                    whileFocus={{ scale: 1.02 }}
                                 />
                             </div>
 
@@ -330,13 +384,11 @@ export default function CreateCandidatePage() {
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
                                     Pays
                                 </label>
-                                <motion.input
+                                <input
                                     type="text"
                                     value={formData.country}
                                     onChange={(e) => handleChange("country", e.target.value)}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="Ex: Tunisie"
-                                    whileFocus={{ scale: 1.02 }}
                                 />
                             </div>
                         </div>
@@ -361,7 +413,7 @@ export default function CreateCandidatePage() {
                                     onChange={(e) => handleChange("hiringRequestId", e.target.value)}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
                                 >
-                                    <option value="">Sélectionner un poste</option>
+                                    <option value={0}>Aucun</option>
                                     {vacantPositions.map((position) => (
                                         <option key={position.id} value={position.id}>
                                             {position.jobTitle} - {position.service}
@@ -374,14 +426,12 @@ export default function CreateCandidatePage() {
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
                                     Poste Visé <span className="text-red">*</span>
                                 </label>
-                                <motion.input
+                                <input
                                     type="text"
                                     required
                                     value={formData.positionAppliedFor}
                                     onChange={(e) => handleChange("positionAppliedFor", e.target.value)}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="Ex: Développeur Full Stack"
-                                    whileFocus={{ scale: 1.02 }}
                                 />
                             </div>
 
@@ -389,13 +439,11 @@ export default function CreateCandidatePage() {
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
                                     Département
                                 </label>
-                                <motion.input
+                                <input
                                     type="text"
                                     value={formData.department}
                                     onChange={(e) => handleChange("department", e.target.value)}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="Ex: IT"
-                                    whileFocus={{ scale: 1.02 }}
                                 />
                             </div>
 
@@ -403,13 +451,11 @@ export default function CreateCandidatePage() {
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
                                     Spécialité
                                 </label>
-                                <motion.input
+                                <input
                                     type="text"
                                     value={formData.specialty}
                                     onChange={(e) => handleChange("specialty", e.target.value)}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="Ex: React, Node.js"
-                                    whileFocus={{ scale: 1.02 }}
                                 />
                             </div>
 
@@ -454,13 +500,11 @@ export default function CreateCandidatePage() {
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
                                     Spécialité d'Étude
                                 </label>
-                                <motion.input
+                                <input
                                     type="text"
                                     value={formData.studySpecialty}
                                     onChange={(e) => handleChange("studySpecialty", e.target.value)}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="Ex: Informatique, Gestion..."
-                                    whileFocus={{ scale: 1.02 }}
                                 />
                             </div>
 
@@ -468,14 +512,12 @@ export default function CreateCandidatePage() {
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
                                     Années d'Expérience
                                 </label>
-                                <motion.input
+                                <input
                                     type="number"
                                     min="0"
                                     value={formData.yearsOfExperience}
                                     onChange={(e) => handleChange("yearsOfExperience", parseInt(e.target.value))}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="Ex: 5"
-                                    whileFocus={{ scale: 1.02 }}
                                 />
                             </div>
 
@@ -512,14 +554,12 @@ export default function CreateCandidatePage() {
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
                                     Salaire Actuel (TND)
                                 </label>
-                                <motion.input
+                                <input
                                     type="number"
                                     min="0"
-                                    value={formData.currentSalary || ''}
+                                    value={formData.currentSalary}
                                     onChange={(e) => handleChange("currentSalary", parseFloat(e.target.value))}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="0.000"
-                                    whileFocus={{ scale: 1.02 }}
                                 />
                             </div>
 
@@ -527,14 +567,25 @@ export default function CreateCandidatePage() {
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
                                     Prétention Salariale (TND)
                                 </label>
-                                <motion.input
+                                <input
                                     type="number"
                                     min="0"
-                                    value={formData.salaryExpectation || ''}
+                                    value={formData.salaryExpectation}
                                     onChange={(e) => handleChange("salaryExpectation", parseFloat(e.target.value))}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="0.000"
-                                    whileFocus={{ scale: 1.02 }}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="mb-2.5 block text-black dark:text-white font-medium">
+                                    Salaire Proposé (TND)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={formData.proposedSalary}
+                                    onChange={(e) => handleChange("proposedSalary", parseFloat(e.target.value))}
+                                    className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
                                 />
                             </div>
 
@@ -542,13 +593,11 @@ export default function CreateCandidatePage() {
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
                                     Préavis
                                 </label>
-                                <motion.input
+                                <input
                                     type="text"
                                     value={formData.noticePeriod}
                                     onChange={(e) => handleChange("noticePeriod", e.target.value)}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="Ex: 1 mois, Immédiat"
-                                    whileFocus={{ scale: 1.02 }}
                                 />
                             </div>
 
@@ -583,14 +632,14 @@ export default function CreateCandidatePage() {
                         </div>
                     </motion.div>
 
-                    {/* Initial Opinions (Optional) */}
+                    {/* Opinions */}
                     <motion.div
                         className="mb-8"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.58 }}
                     >
-                        <h4 className="mb-4 font-semibold text-lg text-primary">📝 Avis Initiaux (Optionnel)</h4>
+                        <h4 className="mb-4 font-semibold text-lg text-primary">📝 Avis</h4>
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div>
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
@@ -625,57 +674,7 @@ export default function CreateCandidatePage() {
                         </div>
                     </motion.div>
 
-                    {/* CV Upload Section */}
-                    <motion.div
-                        className="mb-8"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6 }}
-                    >
-                        <h4 className="mb-4 font-semibold text-lg text-primary">📄 Documents</h4>
-
-                        <div className="grid grid-cols-1 gap-6">
-                            <div>
-                                <label className="mb-2.5 block text-black dark:text-white font-medium">
-                                    CV (PDF ou DOCX)
-                                </label>
-                                <motion.div
-                                    className="relative"
-                                    whileHover={{ scale: 1.01 }}
-                                >
-                                    <input
-                                        type="file"
-                                        accept=".pdf,.docx"
-                                        onChange={handleFileChange}
-                                        className="hidden"
-                                        id="cv-upload"
-                                    />
-                                    <label
-                                        htmlFor="cv-upload"
-                                        className="flex items-center justify-center w-full rounded-lg border-2 border-dashed border-stroke bg-gray-50 px-6 py-8 cursor-pointer transition hover:border-primary hover:bg-primary/5 dark:border-dark-3 dark:bg-dark-2 dark:hover:bg-primary/10"
-                                    >
-                                        <div className="text-center">
-                                            {cvPreview ? (
-                                                <>
-                                                    <div className="text-4xl mb-2">✅</div>
-                                                    <p className="text-sm font-medium text-primary">{cvPreview}</p>
-                                                    <p className="text-xs text-gray-500 mt-1">Cliquez pour changer</p>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <div className="text-4xl mb-2">📎</div>
-                                                    <p className="text-sm font-medium">Cliquez pour uploader le CV</p>
-                                                    <p className="text-xs text-gray-500 mt-1">PDF ou DOCX (max 5MB)</p>
-                                                </>
-                                            )}
-                                        </div>
-                                    </label>
-                                </motion.div>
-                            </div>
-                        </div>
-                    </motion.div>
-
-                    {/* Application Information */}
+                    {/* Source & Comments */}
                     <motion.div
                         className="mb-8"
                         initial={{ opacity: 0, y: 20 }}
@@ -705,43 +704,37 @@ export default function CreateCandidatePage() {
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
                                     Commentaires Recruteur
                                 </label>
-                                <motion.textarea
+                                <textarea
                                     rows={3}
                                     value={formData.recruiterComments}
                                     onChange={(e) => handleChange("recruiterComments", e.target.value)}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="Notes du recruteur..."
-                                    whileFocus={{ scale: 1.02 }}
                                 />
                             </div>
                         </div>
                     </motion.div>
 
-                    {/* Submit Button */}
+                    {/* Buttons */}
                     <motion.div
                         className="flex justify-end gap-4"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.7 }}
                     >
-                        <motion.button
+                        <button
                             type="button"
                             onClick={() => router.back()}
                             className="rounded-lg border-2 border-stroke px-8 py-3 font-semibold transition hover:bg-gray-100 dark:border-dark-3 dark:hover:bg-dark-2"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
                         >
                             Annuler
-                        </motion.button>
-                        <motion.button
+                        </button>
+                        <button
                             type="submit"
-                            disabled={loading}
+                            disabled={submitting}
                             className="rounded-lg bg-gradient-to-r from-primary to-primary/80 px-8 py-3 font-semibold text-white shadow-lg hover:shadow-xl disabled:opacity-50"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
                         >
-                            {loading ? "⏳ Création..." : "✅ Créer le Candidat"}
-                        </motion.button>
+                            {submitting ? "⏳ Enregistrement..." : "💾 Enregistrer"}
+                        </button>
                     </motion.div>
                 </form>
             </motion.div>

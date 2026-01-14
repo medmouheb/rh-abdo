@@ -138,6 +138,18 @@ export async function createCandidate(data: {
   documentsPath?: string;
   recruiterComments?: string;
   hiringRequestId?: number;
+  // New fields
+  educationLevel?: string;
+  familySituation?: string;
+  studySpecialty?: string;
+  currentSalary?: number;
+  salaryExpectation?: number;
+  proposedSalary?: number;
+  noticePeriod?: string;
+  hrOpinion?: string;
+  managerOpinion?: string;
+  recruitmentMode?: string;
+  workSite?: string;
 }) {
   try {
     const candidate = await prisma.candidate.create({
@@ -163,18 +175,39 @@ export async function updateCandidate(id: number, data: Partial<{
   firstName: string;
   lastName: string;
   email: string;
-  phone: string;
+  phone: string | null;
   positionAppliedFor: string;
-  department: string;
-  source: string;
-  yearsOfExperience: number;
-  cvPath: string;
-  documentsPath: string;
-  recruiterComments: string;
+  department: string | null;
+  source: string | null;
+  yearsOfExperience: number | null;
+  cvPath: string | null;
+  documentsPath: string | null;
+  recruiterComments: string | null;
   status: string;
-  hiringRequestId: number;
+  hiringRequestId: number | null;
+  educationLevel: string | null;
+  familySituation: string | null;
+  studySpecialty: string | null;
+  currentSalary: number | null;
+  salaryExpectation: number | null;
+  proposedSalary: number | null;
+  noticePeriod: string | null;
+  hrOpinion: string | null;
+  managerOpinion: string | null;
+  recruitmentMode: string | null;
+  workSite: string | null;
+  birthDate: Date | string | null;
+  gender: string | null;
+  address: string | null;
+  postalCode: string | null;
+  city: string | null;
+  country: string | null;
+  level: string | null;
+  specialty: string | null;
+  language: string | null;
 }>) {
   try {
+    console.log("Updating candidate:", id, JSON.stringify(data, null, 2));
     const candidate = await prisma.candidate.update({
       where: { id },
       data,
@@ -185,6 +218,10 @@ export async function updateCandidate(id: number, data: Partial<{
     return { success: true, data: candidate };
   } catch (error) {
     console.error("Error updating candidate:", error);
+    // @ts-ignore
+    if (error.code) console.error("Prisma error code:", error.code);
+    // @ts-ignore
+    if (error.meta) console.error("Prisma error meta:", error.meta);
     return { success: false, error: "Failed to update candidate" };
   }
 }

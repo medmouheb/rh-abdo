@@ -125,6 +125,7 @@ export default function CandidateDetailPage() {
                                 icon="🎂"
                             />
                             <InfoItem label="Genre" value={candidate.gender === "MALE" ? "Masculin" : "Féminin"} icon="⚧️" />
+                            <InfoItem label="Situation Familiale" value={candidate.familySituation || "-"} icon="👨‍👩‍👧‍👦" />
                             <InfoItem label="Adresse" value={candidate.address || "-"} icon="🏠" className="md:col-span-2" />
                             <InfoItem label="Code Postal" value={candidate.postalCode || "-"} icon="📮" />
                             <InfoItem label="Ville" value={candidate.city || "-"} icon="🌆" />
@@ -147,6 +148,8 @@ export default function CandidateDetailPage() {
                             <InfoItem label="Département" value={candidate.department || "-"} icon="🏢" />
                             <InfoItem label="Spécialité" value={candidate.specialty || "-"} icon="⚙️" />
                             <InfoItem label="Niveau" value={candidate.level || "-"} icon="📊" />
+                            <InfoItem label="Niveau d'Étude" value={candidate.educationLevel || "-"} icon="🎓" />
+                            <InfoItem label="Spécialité d'Étude" value={candidate.studySpecialty || "-"} icon="📚" />
                             <InfoItem label="Expérience" value={candidate.yearsOfExperience ? `${candidate.yearsOfExperience} ans` : "-"} icon="📈" />
                             <InfoItem label="Langue" value={candidate.language || "-"} icon="🗣️" />
                             <InfoItem label="Source" value={candidate.source || "-"} icon="📱" />
@@ -155,6 +158,42 @@ export default function CandidateDetailPage() {
                                 value={format(new Date(candidate.createdAt), "dd/MM/yyyy")}
                                 icon="📅"
                             />
+                        </div>
+                    </motion.div>
+
+                    {/* Financial & Admin Information */}
+                    <motion.div
+                        className="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-dark"
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.32 }}
+                    >
+                        <h3 className="mb-4 text-xl font-bold text-dark dark:text-white border-b pb-2">
+                            💰 Informations Financières & Admin
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <InfoItem label="Salaire Actuel" value={candidate.currentSalary ? `${candidate.currentSalary} TND` : "-"} icon="💵" />
+                            <InfoItem label="Prétention Salariale" value={candidate.salaryExpectation ? `${candidate.salaryExpectation} TND` : "-"} icon="💰" />
+                            <InfoItem label="Salaire Proposé" value={candidate.proposedSalary ? `${candidate.proposedSalary} TND` : "-"} icon="🤝" />
+                            <InfoItem label="Préavis" value={candidate.noticePeriod || "-"} icon="⏳" />
+                            <InfoItem label="Mode de Recrutement" value={candidate.recruitmentMode === "INTERNAL" ? "Interne" : "Externe"} icon="🔄" />
+                            <InfoItem label="Site de Travail" value={candidate.workSite || "-"} icon="📍" />
+                        </div>
+                    </motion.div>
+
+                    {/* Opinions */}
+                    <motion.div
+                        className="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-dark"
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.34 }}
+                    >
+                        <h3 className="mb-4 text-xl font-bold text-dark dark:text-white border-b pb-2">
+                            📝 Avis Initiaux
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <InfoItem label="Avis RH" value={candidate.hrOpinion || "-"} icon="👤" />
+                            <InfoItem label="Avis Manager" value={candidate.managerOpinion || "-"} icon="👔" />
                         </div>
                     </motion.div>
 
