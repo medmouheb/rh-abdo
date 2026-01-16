@@ -7,6 +7,8 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 import Link from "next/link";
 import InterviewScheduler from "@/components/modals/InterviewScheduler";
+import { useAuth } from "@/contexts/AuthContext";
+import { apiRequest } from "@/lib/api-client";
 
 const STATUS_COLORS = {
     RECEIVED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
@@ -20,11 +22,27 @@ const STATUS_COLORS = {
     REJECTED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
 };
 
+const OPINION_OPTIONS = [
+    { value: "", label: "Non défini" },
+    { value: "FAVORABLE", label: "Favorable" },
+    { value: "UNFAVORABLE", label: "Défavorable" },
+    { value: "PRIORITAIRE", label: "Prioritaire" },
+    { value: "PASSABLE", label: "Passable" },
+    { value: "STAND_BY", label: "Stand by" },
+];
+
 export default function CandidateDetailPage() {
     const params = useParams();
+    const { user } = useAuth();
     const [candidate, setCandidate] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
+    const [editingOpinion, setEditingOpinion] = useState<"hr" | "manager" | null>(null);
+    const [opinionValues, setOpinionValues] = useState({
+        hrOpinion: "",
+        managerOpinion: "",
+    });
+    const [savingOpinion, setSavingOpinion] = useState(false);
 
     useEffect(() => {
         async function fetchCandidate() {
@@ -33,6 +51,10 @@ export default function CandidateDetailPage() {
                 if (response.ok) {
                     const data = await response.json();
                     setCandidate(data);
+                    setOpinionValues({
+                        hrOpinion: data.hrOpinion || "",
+                        managerOpinion: data.managerOpinion || "",
+                    });
                 }
             } catch (error) {
                 console.error("Failed to fetch candidate:", error);
@@ -42,6 +64,54 @@ export default function CandidateDetailPage() {
         }
         fetchCandidate();
     }, [params.id]);
+
+    const handleSaveOpinion = async (type: "hr" | "manager") => {
+        setSavingOpinion(true);
+        try {
+            // Check if user has permission (RH or Manager)
+            if (user?.role !== "RH" && user?.role !== "Manager") {
+                alert("Seuls les utilisateurs RH et Manager peuvent modifier les avis");
+                setSavingOpinion(false);
+                setEditingOpinion(null);
+                return;
+            }
+
+            const response = await apiRequest(`/api/candidates/${params.id}`, {
+                method: "PATCH",
+                body: JSON.stringify({
+                    [type === "hr" ? "hrOpinion" : "managerOpinion"]: opinionValues[type === "hr" ? "hrOpinion" : "managerOpinion"] || null,
+                }),
+            });
+
+            if (response.ok) {
+                const updatedCandidate = await response.json();
+                setCandidate(updatedCandidate);
+                setEditingOpinion(null);
+                
+                // Show message if status was automatically updated
+                const oldStatus = candidate.status;
+                if (updatedCandidate.status !== oldStatus) {
+                    const statusMessages: Record<string, string> = {
+                        SHORTLISTED: "Le candidat a été automatiquement présélectionné (Avis RH favorable)",
+                        SELECTED: "Le candidat a été automatiquement accepté (Avis RH et Manager favorables)",
+                        REJECTED: "Le candidat a été automatiquement refusé (Avis défavorable)",
+                    };
+                    const message = statusMessages[updatedCandidate.status] || `Le statut a été mis à jour vers: ${updatedCandidate.status}`;
+                    alert(`✅ ${message}`);
+                } else {
+                    alert("✅ Avis enregistré avec succès");
+                }
+            } else {
+                const error = await response.json();
+                alert(`Erreur: ${error.error || "Impossible de sauvegarder"}`);
+            }
+        } catch (error) {
+            console.error("Failed to save opinion:", error);
+            alert("Erreur lors de la sauvegarde");
+        } finally {
+            setSavingOpinion(false);
+        }
+    };
 
     const handleScheduleInterview = async (date: Date, time: string, type: string, notes: string) => {
         try {
@@ -229,12 +299,141 @@ export default function CandidateDetailPage() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.34 }}
                     >
-                        <h3 className="mb-4 text-xl font-bold text-dark dark:text-white border-b pb-2">
-                            📝 Avis Initiaux
-                        </h3>
+                        <div className="mb-4 flex items-center justify-between border-b pb-2">
+                            <h3 className="text-xl font-bold text-dark dark:text-white">
+                                📝 Avis Initiaux
+                            </h3>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <InfoItem label="Avis RH" value={candidate.hrOpinion || "-"} icon="👤" />
-                            <InfoItem label="Avis Manager" value={candidate.managerOpinion || "-"} icon="👔" />
+                            {/* Avis RH */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                    👤 Avis RH
+                                </label>
+                                {editingOpinion === "hr" ? (
+                                    <div className="space-y-2">
+                                        <select
+                                            value={opinionValues.hrOpinion}
+                                            onChange={(e) => setOpinionValues(prev => ({ ...prev, hrOpinion: e.target.value }))}
+                                            className="w-full rounded-lg border border-stroke bg-transparent px-4 py-2 text-dark focus:border-primary focus-visible:outline-none dark:border-dark-3 dark:text-white"
+                                            disabled={savingOpinion}
+                                        >
+                                            {OPINION_OPTIONS.map(option => (
+                                                <option key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <div className="flex gap-2">
+                                            <motion.button
+                                                onClick={() => handleSaveOpinion("hr")}
+                                                disabled={savingOpinion}
+                                                className="flex-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50"
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                            >
+                                                {savingOpinion ? "Enregistrement..." : "Enregistrer"}
+                                            </motion.button>
+                                            <motion.button
+                                                onClick={() => {
+                                                    setEditingOpinion(null);
+                                                    setOpinionValues({
+                                                        hrOpinion: candidate.hrOpinion || "",
+                                                        managerOpinion: candidate.managerOpinion || "",
+                                                    });
+                                                }}
+                                                disabled={savingOpinion}
+                                                className="rounded-lg border border-stroke px-3 py-2 text-sm font-semibold text-dark hover:bg-gray-50 dark:border-dark-3 dark:text-white dark:hover:bg-gray-800 disabled:opacity-50"
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                            >
+                                                Annuler
+                                            </motion.button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-between rounded-lg border border-stroke bg-gray-50 px-4 py-3 dark:border-dark-3 dark:bg-gray-800">
+                                        <span className="font-semibold text-dark dark:text-white">
+                                            {candidate.hrOpinion ? OPINION_OPTIONS.find(o => o.value === candidate.hrOpinion)?.label || candidate.hrOpinion : "-"}
+                                        </span>
+                                        {(user?.role === "RH" || user?.role === "Manager") && (
+                                            <motion.button
+                                                onClick={() => setEditingOpinion("hr")}
+                                                className="text-primary hover:text-primary/80"
+                                                whileHover={{ scale: 1.1 }}
+                                                whileTap={{ scale: 0.9 }}
+                                            >
+                                                ✏️
+                                            </motion.button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Avis Manager */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                    👔 Avis Manager
+                                </label>
+                                {editingOpinion === "manager" ? (
+                                    <div className="space-y-2">
+                                        <select
+                                            value={opinionValues.managerOpinion}
+                                            onChange={(e) => setOpinionValues(prev => ({ ...prev, managerOpinion: e.target.value }))}
+                                            className="w-full rounded-lg border border-stroke bg-transparent px-4 py-2 text-dark focus:border-primary focus-visible:outline-none dark:border-dark-3 dark:text-white"
+                                            disabled={savingOpinion}
+                                        >
+                                            {OPINION_OPTIONS.map(option => (
+                                                <option key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <div className="flex gap-2">
+                                            <motion.button
+                                                onClick={() => handleSaveOpinion("manager")}
+                                                disabled={savingOpinion}
+                                                className="flex-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50"
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                            >
+                                                {savingOpinion ? "Enregistrement..." : "Enregistrer"}
+                                            </motion.button>
+                                            <motion.button
+                                                onClick={() => {
+                                                    setEditingOpinion(null);
+                                                    setOpinionValues({
+                                                        hrOpinion: candidate.hrOpinion || "",
+                                                        managerOpinion: candidate.managerOpinion || "",
+                                                    });
+                                                }}
+                                                disabled={savingOpinion}
+                                                className="rounded-lg border border-stroke px-3 py-2 text-sm font-semibold text-dark hover:bg-gray-50 dark:border-dark-3 dark:text-white dark:hover:bg-gray-800 disabled:opacity-50"
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                            >
+                                                Annuler
+                                            </motion.button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-between rounded-lg border border-stroke bg-gray-50 px-4 py-3 dark:border-dark-3 dark:bg-gray-800">
+                                        <span className="font-semibold text-dark dark:text-white">
+                                            {candidate.managerOpinion ? OPINION_OPTIONS.find(o => o.value === candidate.managerOpinion)?.label || candidate.managerOpinion : "-"}
+                                        </span>
+                                        {(user?.role === "RH" || user?.role === "Manager") && (
+                                            <motion.button
+                                                onClick={() => setEditingOpinion("manager")}
+                                                className="text-primary hover:text-primary/80"
+                                                whileHover={{ scale: 1.1 }}
+                                                whileTap={{ scale: 0.9 }}
+                                            >
+                                                ✏️
+                                            </motion.button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </motion.div>
 
@@ -437,6 +636,69 @@ export default function CandidateDetailPage() {
                             })()}
                         </div>
                     </motion.div>
+
+                    {/* Status History */}
+                    {candidate.statusHistory && candidate.statusHistory.length > 0 && (
+                        <motion.div
+                            className="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-dark"
+                            initial={{ opacity: 0, x: 50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.4 }}
+                        >
+                            <h3 className="mb-4 text-xl font-bold text-dark dark:text-white">
+                                📈 Historique des Changements de Statut
+                            </h3>
+                            <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-300 before:to-transparent">
+                                {candidate.statusHistory.map((historyItem: any, index: number) => (
+                                    <motion.div
+                                        key={historyItem.id}
+                                        className="relative flex items-start gap-4 pl-8"
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.4 + index * 0.05 }}
+                                    >
+                                        <div className={`absolute left-0 top-2 flex h-10 w-10 items-center justify-center rounded-full border-4 border-white dark:border-gray-dark ${STATUS_COLORS[historyItem.newStatus as keyof typeof STATUS_COLORS] || 'bg-gray-100 text-gray-700'}`}>
+                                            <span className="text-sm font-bold">
+                                                {historyItem.statusLabel.charAt(0)}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h4 className="font-semibold text-dark dark:text-white">
+                                                    {historyItem.statusLabel}
+                                                </h4>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {format(new Date(historyItem.createdAt), "dd/MM/yyyy HH:mm")}
+                                                </span>
+                                            </div>
+                                            {historyItem.oldStatus && (
+                                                <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+                                                    <span className="font-medium">De:</span> {historyItem.oldStatus} 
+                                                    <span className="mx-2">→</span>
+                                                    <span className="font-medium">Vers:</span> {historyItem.newStatus}
+                                                </p>
+                                            )}
+                                            {historyItem.reason && (
+                                                <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+                                                    <span className="font-medium">Raison:</span> {historyItem.reason}
+                                                </p>
+                                            )}
+                                            {historyItem.comments && (
+                                                <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+                                                    <span className="font-medium">Commentaires:</span> {historyItem.comments}
+                                                </p>
+                                            )}
+                                            {historyItem.changedByUser && (
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                                    Modifié par: <span className="font-medium">{historyItem.changedByUser.username}</span> ({historyItem.changedByUser.role})
+                                                </p>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
                 </div>
             </div>
 

@@ -13,11 +13,13 @@ model User {
   id       Int    @id @default(autoincrement())
   username String @unique
   password String
-  role     String @default("RECRUITER") // RECRUITER, HR_MANAGER, ADMIN
+  role     String @default("RH") // RH, Manager, CO
   
   hiringRequests HiringRequest[]
   validations    CandidateValidation[]
   interviews     Interview[]
+  notifications  Notification[] @relation("UserNotifications")
+  statusChanges  CandidateStatusHistory[] @relation("StatusChangeUser")
 }
 
 model Employee {
@@ -147,6 +149,7 @@ model Candidate {
   interviews  Interview[]
   medicalVisit MedicalVisit?
   jobOffer     JobOffer?
+  statusHistory CandidateStatusHistory[]
 }
 
 model CandidateValidation {
@@ -215,4 +218,42 @@ model JobOffer {
   
   hrSignature String?   // Name of HR responsible
   signatureDate DateTime?
+}
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  
+  userId      Int      // Destinataire
+  user        User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  
+  type        String   // "INTERVIEW_VALIDATED", "HIRING_REQUEST", "CANDIDATE_UPDATE", etc.
+  title       String
+  message     String
+  
+  relatedId   Int?     // ID de l'entretien/candidat concerné
+  relatedType String?  // "interview", "candidate", "hiringRequest"
+  
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+  
+  createdBy   Int?     // ID de l'utilisateur qui a créé la notification
+}
+
+model CandidateStatusHistory {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  
+  candidateId Int
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  
+  oldStatus   String?  // Statut précédent
+  newStatus   String   // Nouveau statut
+  statusLabel String   // Libellé lisible du statut (ex: "Traitement dossier", "Entretien RH", etc.)
+  
+  changedBy   Int?     // ID de l'utilisateur qui a fait le changement
+  changedByUser User?  @relation("StatusChangeUser", fields: [changedBy], references: [id])
+  
+  comments    String?  // Commentaires sur le changement
+  reason      String?  // Raison du changement (ex: "Validation entretien", "Refus candidat", etc.)
 }

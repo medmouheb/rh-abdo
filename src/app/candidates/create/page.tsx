@@ -2,7 +2,7 @@
 
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { createCandidate } from "@/app/actions/candidates";
 import { getVacantPositions } from "@/app/actions/vacant-positions";
@@ -11,6 +11,7 @@ import "flatpickr/dist/flatpickr.min.css";
 
 export default function CreateCandidatePage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [vacantPositions, setVacantPositions] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [cvFile, setCvFile] = useState<File | null>(null);
@@ -38,7 +39,7 @@ export default function CreateCandidatePage() {
 
         // Application Info
         source: "WEBSITE",
-        hiringRequestId: 0,
+        hiringRequestId: null as number | null,
         recruiterComments: "",
 
         // Extended Info
@@ -60,22 +61,49 @@ export default function CreateCandidatePage() {
             const result = await getVacantPositions();
             if (result.data) {
                 setVacantPositions(result.data);
+                
+                // Get hiringRequestId from URL params and set it in form after positions are loaded
+                const hiringRequestIdParam = searchParams.get('hiringRequestId');
+                if (hiringRequestIdParam) {
+                    const id = parseInt(hiringRequestIdParam);
+                    if (!isNaN(id)) {
+                        // Check if this position exists in the list
+                        const positionExists = result.data.some((p: any) => p.id === id);
+                        if (positionExists) {
+                            setFormData(prev => ({
+                                ...prev,
+                                hiringRequestId: id,
+                            }));
+                            
+                            // Auto-fill department and job title
+                            const selectedPosition = result.data.find((p: any) => p.id === id);
+                            if (selectedPosition) {
+                                setFormData(prev => ({
+                                    ...prev,
+                                    department: selectedPosition.service || prev.department,
+                                    positionAppliedFor: selectedPosition.jobTitle || prev.positionAppliedFor,
+                                }));
+                            }
+                        }
+                    }
+                }
             }
         }
         fetchPositions();
-    }, []);
+    }, [searchParams]);
 
     const handleChange = (field: string, value: any) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
 
         // Auto-fill department when position is selected
-        if (field === "hiringRequestId" && value) {
-            const selectedPosition = vacantPositions.find(p => p.id === parseInt(value));
+        if (field === "hiringRequestId" && value !== null && value !== undefined) {
+            const positionId = typeof value === 'number' ? value : parseInt(value);
+            const selectedPosition = vacantPositions.find(p => p.id === positionId);
             if (selectedPosition) {
                 setFormData(prev => ({
                     ...prev,
-                    department: selectedPosition.service,
-                    positionAppliedFor: selectedPosition.jobTitle,
+                    department: selectedPosition.service || prev.department,
+                    positionAppliedFor: selectedPosition.jobTitle || prev.positionAppliedFor,
                 }));
             }
         }
@@ -357,8 +385,8 @@ export default function CreateCandidatePage() {
                                     Poste Vacant
                                 </label>
                                 <select
-                                    value={formData.hiringRequestId}
-                                    onChange={(e) => handleChange("hiringRequestId", e.target.value)}
+                                    value={formData.hiringRequestId || ""}
+                                    onChange={(e) => handleChange("hiringRequestId", e.target.value ? parseInt(e.target.value) : null)}
                                     className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
                                 >
                                     <option value="">Sélectionner un poste</option>

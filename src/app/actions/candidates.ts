@@ -171,47 +171,76 @@ export async function createCandidate(data: {
 }
 
 // Update candidate
-export async function updateCandidate(id: number, data: Partial<{
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string | null;
-  positionAppliedFor: string;
-  department: string | null;
-  source: string | null;
-  yearsOfExperience: number | null;
-  cvPath: string | null;
-  documentsPath: string | null;
-  recruiterComments: string | null;
-  status: string;
-  hiringRequestId: number | null;
-  educationLevel: string | null;
-  familySituation: string | null;
-  studySpecialty: string | null;
-  currentSalary: number | null;
-  salaryExpectation: number | null;
-  proposedSalary: number | null;
-  noticePeriod: string | null;
-  hrOpinion: string | null;
-  managerOpinion: string | null;
-  recruitmentMode: string | null;
-  workSite: string | null;
-  birthDate: Date | string | null;
-  gender: string | null;
-  address: string | null;
-  postalCode: string | null;
-  city: string | null;
-  country: string | null;
-  level: string | null;
-  specialty: string | null;
-  language: string | null;
-}>) {
+export async function updateCandidate(
+  id: number, 
+  data: Partial<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string | null;
+    positionAppliedFor: string;
+    department: string | null;
+    source: string | null;
+    yearsOfExperience: number | null;
+    cvPath: string | null;
+    documentsPath: string | null;
+    recruiterComments: string | null;
+    status: string;
+    hiringRequestId: number | null;
+    educationLevel: string | null;
+    familySituation: string | null;
+    studySpecialty: string | null;
+    currentSalary: number | null;
+    salaryExpectation: number | null;
+    proposedSalary: number | null;
+    noticePeriod: string | null;
+    hrOpinion: string | null;
+    managerOpinion: string | null;
+    recruitmentMode: string | null;
+    workSite: string | null;
+    birthDate: Date | string | null;
+    gender: string | null;
+    address: string | null;
+    postalCode: string | null;
+    city: string | null;
+    country: string | null;
+    level: string | null;
+    specialty: string | null;
+    language: string | null;
+  }>,
+  changedBy?: number,
+  statusChangeReason?: string
+) {
   try {
     console.log("Updating candidate:", id, JSON.stringify(data, null, 2));
+    
+    // Get current status if status is being changed
+    let oldStatus: string | null = null;
+    if (data.status) {
+      const currentCandidate = await prisma.candidate.findUnique({
+        where: { id },
+        select: { status: true },
+      });
+      oldStatus = currentCandidate?.status || null;
+    }
+
     const candidate = await prisma.candidate.update({
       where: { id },
       data,
     });
+
+    // Create status history if status changed and changedBy is provided
+    if (data.status && oldStatus !== data.status && changedBy) {
+      const { createStatusHistory } = await import("@/lib/status-history");
+      await createStatusHistory(
+        id,
+        data.status,
+        oldStatus,
+        changedBy,
+        undefined,
+        statusChangeReason
+      );
+    }
 
     revalidatePath("/candidates");
     revalidatePath(`/candidates/${id}`);
@@ -261,16 +290,27 @@ export async function addValidation(data: {
 
     // Update candidate status based on stage
     let newStatus = "RECEIVED";
+    let reason = "";
     if (data.stage === "SHORTLIST" && data.decision === "APPROVED") {
       newStatus = "SHORTLISTED";
+      reason = "Présélection approuvée";
     } else if (data.stage === "FINAL_SELECTION" && data.decision === "APPROVED") {
       newStatus = "SELECTED";
+      reason = "Validation direction";
+    } else if (data.decision === "REJECTED") {
+      newStatus = "REJECTED";
+      reason = `Refus à l'étape ${data.stage}`;
     }
 
-    await prisma.candidate.update({
-      where: { id: data.candidateId },
-      data: { status: newStatus },
-    });
+    // Update status with history
+    const { updateCandidateStatus } = await import("@/lib/status-history");
+    await updateCandidateStatus(
+      data.candidateId,
+      newStatus,
+      data.validatorId,
+      data.comments,
+      reason
+    );
 
     revalidatePath("/candidates");
     revalidatePath(`/candidates/${data.candidateId}`);
@@ -297,12 +337,23 @@ export async function scheduleInterview(data: {
       },
     });
 
-    // Update candidate status
+    // Update candidate status with history
     const newStatus = data.type === "TECHNICAL" ? "TECHNICAL_INTERVIEW" : "HR_INTERVIEW";
-    await prisma.candidate.update({
-      where: { id: data.candidateId },
-      data: { status: newStatus },
-    });
+    if (data.interviewerId) {
+      const { updateCandidateStatus } = await import("@/lib/status-history");
+      await updateCandidateStatus(
+        data.candidateId,
+        newStatus,
+        data.interviewerId,
+        undefined,
+        `Entretien ${data.type === "TECHNICAL" ? "Technique" : "RH"} programmé`
+      );
+    } else {
+      await prisma.candidate.update({
+        where: { id: data.candidateId },
+        data: { status: newStatus },
+      });
+    }
 
     revalidatePath("/candidates");
     revalidatePath(`/candidates/${data.candidateId}`);
@@ -320,13 +371,29 @@ export async function updateInterviewResult(
     result: string;
     comments?: string;
     recommendations?: string;
-  }
+  },
+  createdBy?: number
 ) {
   try {
     const interview = await prisma.interview.update({
       where: { id: interviewId },
       data,
+      include: {
+        candidate: true,
+      },
     });
+
+    // If the interview is validated (ADMITTED), create notifications for CO and RH
+    if (data.result === "ADMITTED" && createdBy) {
+      const { notifyInterviewValidation } = await import("@/lib/notifications");
+      await notifyInterviewValidation(
+        interviewId,
+        interview.type as "TECHNICAL" | "HR",
+        `${interview.candidate.firstName} ${interview.candidate.lastName}`,
+        interview.candidate.positionAppliedFor,
+        createdBy
+      );
+    }
 
     revalidatePath("/candidates");
     return { success: true, data: interview };
@@ -376,10 +443,15 @@ export async function sendJobOffer(data: {
       },
     });
 
-    await prisma.candidate.update({
-      where: { id: data.candidateId },
-      data: { status: "OFFER_SENT" },
-    });
+    // Update status with history (using 0 as fallback for userId)
+    const { updateCandidateStatus } = await import("@/lib/status-history");
+    await updateCandidateStatus(
+      data.candidateId,
+      "OFFER_SENT",
+      0, // TODO: Pass actual userId when available
+      undefined,
+      "Offre d'emploi envoyée"
+    );
 
     revalidatePath("/candidates");
     revalidatePath(`/candidates/${data.candidateId}`);
@@ -408,17 +480,24 @@ export async function updateJobOfferResponse(
       },
     });
 
-    // Update candidate status
+    // Update candidate status with history
+    const { updateCandidateStatus } = await import("@/lib/status-history");
     if (data.response === "ACCEPTED") {
-      await prisma.candidate.update({
-        where: { id: jobOffer.candidateId },
-        data: { status: "HIRED" },
-      });
+      await updateCandidateStatus(
+        jobOffer.candidateId,
+        "HIRED",
+        0, // TODO: Pass actual userId when available
+        undefined,
+        "Offre acceptée"
+      );
     } else if (data.response === "REJECTED") {
-      await prisma.candidate.update({
-        where: { id: jobOffer.candidateId },
-        data: { status: "REJECTED" },
-      });
+      await updateCandidateStatus(
+        jobOffer.candidateId,
+        "REJECTED",
+        0, // TODO: Pass actual userId when available
+        undefined,
+        "Offre refusée"
+      );
     }
 
     revalidatePath("/candidates");

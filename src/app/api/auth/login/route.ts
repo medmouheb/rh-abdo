@@ -39,12 +39,19 @@ export async function POST(request: Request) {
         }
 
         const token = jwt.sign(
-            { userId: user.id, username: user.username },
+            { userId: user.id, username: user.username, role: user.role },
             JWT_SECRET,
-            { expiresIn: "1h" }
+            { expiresIn: "24h" }
         );
 
-        return NextResponse.json({ token });
+        return NextResponse.json({ 
+            token,
+            user: {
+                id: user.id,
+                username: user.username,
+                role: user.role,
+            }
+        });
     } catch (error) {
         console.error("Login error:", error);
         return NextResponse.json(

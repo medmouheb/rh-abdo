@@ -7,21 +7,21 @@ import { useSidebarContext } from "./sidebar-context";
 import { motion } from "framer-motion";
 
 const menuItemBaseStyles = cva(
-  "group relative flex items-center gap-2.5 rounded-lg px-4 py-2 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4",
+  "group relative flex items-center gap-3 rounded-xl px-4 py-3 font-medium duration-200 ease-in-out transition-all outline-none ring-offset-2 focus:ring-2 focus:ring-primary/20",
   {
     variants: {
       isActive: {
-        true: "bg-gradient-to-r from-primary/10 to-transparent text-primary dark:text-white dark:from-primary/20",
-        false: "text-dark-4 hover:bg-gray-100 hover:text-dark dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white",
+        true: "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400",
+        false: "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white",
       },
-      isSub: {
-        true: "text-sm",
-        false: "text-base",
-      }
+      collapsed: {
+        true: "justify-center px-2",
+        false: "",
+      },
     },
     defaultVariants: {
       isActive: false,
-      isSub: false,
+      collapsed: false,
     },
   },
 );
@@ -32,50 +32,42 @@ export function MenuItem(
     children: React.ReactNode;
     isActive: boolean;
     isSub?: boolean;
+    collapsed?: boolean;
+    title?: string;
   } & ({ as?: "button"; onClick: () => void } | { as: "link"; href: string }),
 ) {
   const { toggleSidebar, isMobile } = useSidebarContext();
+  const Component = props.as === "link" ? Link : motion.button;
 
-  if (props.as === "link") {
-    return (
-      <Link
-        href={props.href}
-        onClick={() => isMobile && toggleSidebar()}
-        className={cn(
-          menuItemBaseStyles({
-            isActive: props.isActive,
-            isSub: props.isSub,
-            className: "relative block py-2",
-          }),
-          props.className,
-        )}
-      >
-        <motion.div
-          className="flex items-center gap-2.5 w-full"
-          initial={{ x: 0 }}
-          whileHover={{ x: 5 }}
-          transition={{ type: "spring", stiffness: 300 }}
-        >
-          {props.children}
-        </motion.div>
-      </Link>
-    );
-  }
+  // Conditionally add Link specific props
+  const linkProps = props.as === "link" ? {
+    href: props.href,
+    onClick: () => isMobile && toggleSidebar()
+  } : {
+    onClick: props.onClick
+  };
 
   return (
-    <motion.button
-      onClick={props.onClick}
-      aria-expanded={props.isActive}
-      className={menuItemBaseStyles({
-        isActive: props.isActive,
-        isSub: props.isSub,
-        className: "flex w-full items-center gap-3 py-3",
-      })}
-      initial={{ x: 0 }}
-      whileHover={{ x: 5 }}
-      transition={{ type: "spring", stiffness: 300 }}
+    // @ts-ignore
+    <Component
+      {...linkProps}
+      title={props.collapsed ? props.title : undefined}
+      className={cn(
+        menuItemBaseStyles({
+          isActive: props.isActive,
+          collapsed: props.collapsed,
+        }),
+        props.isSub && !props.collapsed && "text-sm pl-11 py-2", // Indent for sub-items
+        props.className
+      )}
     >
       {props.children}
-    </motion.button>
+      {props.isActive && !props.collapsed && !props.isSub && (
+        <motion.div
+          layoutId="activeNav"
+          className="absolute right-2 w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400"
+        />
+      )}
+    </Component>
   );
 }

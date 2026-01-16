@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { format } from "date-fns";
 import Link from "next/link";
 import CandidatesList from "@/components/vacant-positions/CandidatesList";
+import AssignCandidateButton from "@/components/vacant-positions/AssignCandidateButton";
 
 export const metadata = {
     title: "Vacant Position Details | NextAdmin HR",
@@ -155,6 +156,10 @@ export default async function VacantPositionDetailsPage({ params }: { params: { 
             </div>
 
             <div className="mt-8">
+                <AssignCandidateButton 
+                    hiringRequestId={position.id} 
+                    positionStatus={position.status}
+                />
                 <CandidatesList candidates={position.candidates} hiringRequestId={position.id} />
             </div>
         </>

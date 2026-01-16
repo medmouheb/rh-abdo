@@ -11,13 +11,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { LogOutIcon, SettingsIcon, UserIcon } from "./icons";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function UserInfo() {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   const USER = {
-    name: "John Smith",
-    email: "johnson@nextadmin.com",
+    name: user?.username || "User",
+    email: `${user?.username}@nextadmin.com`,
+    role: user?.role || "RH",
     img: "/images/user/user-03.png",
   };
 
@@ -72,6 +75,9 @@ export function UserInfo() {
             </div>
 
             <div className="leading-none text-gray-6">{USER.email}</div>
+            <div className="text-xs leading-none text-primary font-semibold uppercase">
+              {USER.role}
+            </div>
           </figcaption>
         </figure>
 
@@ -106,7 +112,10 @@ export function UserInfo() {
         <div className="p-2 text-base text-[#4B5563] dark:text-dark-6">
           <button
             className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
-            onClick={() => setIsOpen(false)}
+            onClick={() => {
+              setIsOpen(false);
+              logout();
+            }}
           >
             <LogOutIcon />
 

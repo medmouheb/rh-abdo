@@ -1,7 +1,26 @@
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { verifyAuth } from "@/lib/auth";
+import { UserRole } from "@/types/auth";
+
+async function requireAuth(request: Request, allowedRoles?: UserRole[]) {
+    const payload = await verifyAuth(request);
+    if (!payload) {
+        return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }), user: null };
+    }
+    
+    if (allowedRoles && !allowedRoles.includes(payload.role)) {
+        return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }), user: null };
+    }
+    
+    return { error: null, user: payload };
+}
 
 export async function POST(request: Request) {
+  // Only RH and CO can create candidates
+  const { error } = await requireAuth(request, ["RH", "CO"]);
+  if (error) return error;
+
   try {
     const body = await request.json();
 
@@ -29,6 +48,9 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
+  const { error } = await requireAuth(request);
+  if (error) return error;
+
   try {
     const { searchParams } = new URL(request.url);
     const hiringRequestId = searchParams.get("hiringRequestId");

@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -195,6 +196,35 @@ async function main() {
 
   const passwordHash = "$2b$10$ep/D.B.a/J.z.y.x.w.v.u.t.s.r.q.p.o.n.m.l.k.j.i.h.g.f.e"; // dummy hash
 
+  // 0. Create Test Users with different roles (RH, Manager, CO)
+  console.log('\n📝 Creating test users for RBAC...');
+  const testUsers = [
+    { username: 'rh_user', role: 'RH', password: 'password123' },
+    { username: 'manager_user', role: 'Manager', password: 'password123' },
+    { username: 'co_user', role: 'CO', password: 'password123' },
+  ];
+
+  for (const testUser of testUsers) {
+    // For test users, we'll use bcrypt to hash the password properly
+    // Note: In production, always use bcrypt.hash() with proper salt rounds
+    const testPasswordHash = await bcrypt.hash(testUser.password, 10);
+    
+    const user = await prisma.user.upsert({
+      where: { username: testUser.username },
+      update: {
+        role: testUser.role,
+        password: testPasswordHash,
+      },
+      create: {
+        username: testUser.username,
+        password: testPasswordHash,
+        role: testUser.role,
+      },
+    });
+    console.log(`✅ Created test user: ${user.username} (Role: ${user.role})`);
+  }
+  console.log('📝 Test users created! Login with username and password: password123\n');
+
   // 1. Create Recruiters (Users)
   const recruiterUserMap = new Map<string, number>();
 
@@ -207,7 +237,7 @@ async function main() {
       create: {
         username,
         password: passwordHash,
-        role: 'RECRUITER',
+        role: 'RH', // Updated to use new role system
       },
     });
     console.log(`Created/Found user: ${user.username} (ID: ${user.id})`);

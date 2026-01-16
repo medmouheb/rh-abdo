@@ -1,32 +1,30 @@
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_for_local_dev";
+import { verifyAuth } from "@/lib/auth";
+import { UserRole } from "@/types/auth";
 
 export const dynamic = "force-dynamic";
 
-async function verifyAuth(request: Request) {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return null;
+async function requireAuth(request: Request, allowedRoles?: UserRole[]) {
+    const payload = await verifyAuth(request);
+    if (!payload) {
+        return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }), user: null };
     }
-    const token = authHeader.split(" ")[1];
-    try {
-        return jwt.verify(token, JWT_SECRET);
-    } catch (error) {
-        return null;
+    
+    if (allowedRoles && !allowedRoles.includes(payload.role)) {
+        return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }), user: null };
     }
+    
+    return { error: null, user: payload };
 }
 
 export async function PUT(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const decoded = await verifyAuth(request);
-    if (!decoded) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // RH, Manager, and CO can update employees
+    const { error } = await requireAuth(request, ["RH", "Manager", "CO"]);
+    if (error) return error;
 
     try {
         const { id: idStr } = await params;
@@ -49,10 +47,9 @@ export async function DELETE(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const decoded = await verifyAuth(request);
-    if (!decoded) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // Only CO can delete employees
+    const { error } = await requireAuth(request, ["CO"]);
+    if (error) return error;
 
     try {
         const { id: idStr } = await params;

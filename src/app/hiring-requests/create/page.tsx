@@ -1,77 +1,75 @@
 "use client";
 
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { FileText, User, Briefcase, Calendar, Send, Plus, Trash2 } from 'lucide-react';
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
-import Stepper from "@/components/Stepper";
-import { useState } from "react";
-import Flatpickr from "react-flatpickr";
-import "flatpickr/dist/flatpickr.min.css";
-import { motion, AnimatePresence } from "framer-motion";
 
-const STEPS = [
-    "General Info",
-    "Job Details",
-    "Justification",
-    "Requirements",
-];
-
-const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.1
-        }
-    }
-};
-
-const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-        y: 0,
-        opacity: 1,
-        transition: {
-            type: "spring",
-            stiffness: 100
-        }
-    }
-};
-
-export default function CreateHiringRequestPage() {
-    const [currentStep, setCurrentStep] = useState(0);
-
+const HiringRequestForm = () => {
     const [formData, setFormData] = useState({
-        requestDate: new Date(),
-        personnelType: "OUVRIER",
-        service: "",
-        workLocation: "",
-        businessUnit: "",
-        jobTitle: "",
-        desiredHiringDate: new Date(),
-        reason: "REPLACEMENT",
-        replacementName: "",
-        departureReason: "DEMISSION",
-        increaseStartDate: new Date(),
-        increaseEndDate: new Date(),
-        contractType: "CDI",
-        justification: "",
-        jobCharacteristics: "",
-        candidateEducation: "",
-        candidateSkills: "",
+        responsable: '',
+        departement: '',
+        dateVisite: '',
+        dateSouhaitee: '',
+        typeRecrutement: 'Externe',
+        natureDemande: 'creation',
+        remplacementQui: '',
+        formationRequise: '',
+        competences: '',
+        justificationDemande: '',
+        modeEmbauche: '',
+        site: '',
+        responsableRH: '',
+        dateDemandeRH: '',
+        modificationSite: '',
+        besoins: [{ description: '' }],
+        cout: '',
+        delai: '',
+        modelDepSort: false,
+        crd: false,
+        utilisateurFinal: '',
+        cadre: '',
+        bu: '',
+        email: ''
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-    const handleChange = (field: string, value: any) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
+    const departments = [
+        'RH', 'Production', 'Méthode & Indus', 'Finance',
+        'supply chain', 'Maintenance', 'HSE', 'Qualité', 'groupe', 'achat'
+    ];
+
+    const modeEmbauche = ['CDI', 'CDD', 'Stage', 'Intérim'];
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        const target = e.target as HTMLInputElement;
+        const { name, value, type } = target;
+        const checked = target.checked;
+
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
     };
 
-    const nextStep = () => {
-        if (currentStep < STEPS.length - 1) setCurrentStep((curr) => curr + 1);
+    const handleBesoinChange = (index: number, value: string) => {
+        const newBesoins = [...formData.besoins];
+        newBesoins[index].description = value;
+        setFormData(prev => ({ ...prev, besoins: newBesoins }));
     };
 
-    const prevStep = () => {
-        if (currentStep > 0) setCurrentStep((curr) => curr - 1);
+    const addBesoin = () => {
+        setFormData(prev => ({
+            ...prev,
+            besoins: [...prev.besoins, { description: '' }]
+        }));
+    };
+
+    const removeBesoin = (index: number) => {
+        const newBesoins = formData.besoins.filter((_, i) => i !== index);
+        setFormData(prev => ({ ...prev, besoins: newBesoins }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -80,454 +78,599 @@ export default function CreateHiringRequestPage() {
         setMessage(null);
 
         try {
+            // Mapper les données vers le format API existant
+            const apiData = {
+                requestDate: new Date(),
+                personnelType: formData.cadre || "OUVRIER",
+                service: formData.departement,
+                workLocation: formData.site,
+                businessUnit: formData.bu,
+                jobTitle: formData.responsable,
+                desiredHiringDate: formData.dateSouhaitee ? new Date(formData.dateSouhaitee) : (formData.dateVisite ? new Date(formData.dateVisite) : new Date()),
+                reason: formData.natureDemande === 'remplacement' ? "REPLACEMENT" : "CREATION",
+                replacementName: formData.remplacementQui,
+                recruitmentMode: formData.typeRecrutement,
+                contractType: formData.modeEmbauche || "CDI",
+                justification: formData.justificationDemande,
+                jobCharacteristics: formData.besoins.map(b => b.description).join(', '),
+                candidateEducation: formData.formationRequise,
+                candidateSkills: formData.competences,
+            };
+
             const response = await fetch("/api/hiring-request", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ...formData,
-                    dateRangeStart: formData.increaseStartDate,
-                    dateRangeEnd: formData.increaseEndDate,
-                }),
+                body: JSON.stringify(apiData),
             });
 
             if (!response.ok) throw new Error("Failed to submit");
-            setMessage({ type: "success", text: "Hiring request submitted successfully!" });
+
+            setMessage({ type: 'success', text: 'Demande d\'embauche soumise avec succès!' });
+
+            // Réinitialiser le formulaire après 2 secondes
+            setTimeout(() => {
+                window.location.href = '/vacant-positions';
+            }, 2000);
         } catch (error) {
-            setMessage({ type: "error", text: "An error occurred. Please try again." });
+            setMessage({ type: 'error', text: 'Une erreur est survenue. Veuillez réessayer.' });
         } finally {
             setIsSubmitting(false);
         }
     };
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-        >
-            <Breadcrumb pageName="Demande d'Autorisation d'Embauche" />
+        <div className="min-h-screen">
+            <Breadcrumb pageName="Demande d'Embauche" />
 
             <motion.div
-                className="rounded-[10px] border border-stroke bg-white shadow-1 dark:border-dark-3 dark:bg-gray-dark dark:shadow-card p-6 sm:p-8"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="max-w-5xl mx-auto"
             >
-                <Stepper steps={STEPS} currentStep={currentStep} />
+                <div className="bg-white dark:bg-gray-dark rounded-xl shadow-2xl overflow-hidden">
+                    <div className="bg-gradient-to-r from-primary to-primary/80 p-8 text-white">
+                        <div className="flex items-center gap-4">
+                            <FileText className="w-12 h-12" />
+                            <div>
+                                <h1 className="text-3xl font-bold">Demande d'Embauche</h1>
+                                <p className="text-white/80 mt-1">Formulaire de demande de recrutement</p>
+                            </div>
+                        </div>
+                    </div>
 
-                <AnimatePresence mode="wait">
                     {message && (
                         <motion.div
-                            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                            className={`mt-6 p-4 rounded-lg text-white font-medium shadow-lg ${message.type === "success"
-                                    ? "bg-gradient-to-r from-green-500 to-green-600"
-                                    : "bg-gradient-to-r from-red-500 to-red-600"
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={`mx-8 mt-6 p-4 rounded-lg text-white font-medium ${message.type === 'success' ? 'bg-green-500' : 'bg-red-500'
                                 }`}
                         >
                             {message.text}
                         </motion.div>
                     )}
-                </AnimatePresence>
 
-                <form onSubmit={handleSubmit} className="mt-8">
-                    <AnimatePresence mode="wait">
-                        {/* STEP 1: GENERAL INFO */}
-                        {currentStep === 0 && (
-                            <motion.div
-                                key="step-0"
-                                variants={containerVariants}
-                                initial="hidden"
-                                animate="visible"
-                                exit={{ opacity: 0, x: -50 }}
-                                className="flex flex-col gap-6"
-                            >
-                                <motion.div
-                                    className="flex flex-col gap-6 xl:flex-row"
-                                    variants={itemVariants}
-                                >
-                                    <div className="w-full xl:w-1/2">
-                                        <motion.label
-                                            className="mb-2.5 block text-black dark:text-white font-semibold"
-                                            whileHover={{ x: 5 }}
-                                        >
-                                            📅 Date de la demande
-                                        </motion.label>
-                                        <motion.div whileFocus={{ scale: 1.02 }}>
-                                            <Flatpickr
-                                                value={formData.requestDate}
-                                                onChange={([date]) => handleChange("requestDate", date)}
-                                                className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 text-black outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-form-strokedark dark:bg-form-input dark:text-white"
-                                            />
-                                        </motion.div>
-                                    </div>
+                    <form onSubmit={handleSubmit} className="p-8 space-y-8">
+                        {/* Informations Demandeur */}
+                        <motion.div
+                            className="border-l-4 border-blue-500 pl-6"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                        >
+                            <div className="flex items-center gap-3 mb-6">
+                                <User className="w-6 h-6 text-blue-600" />
+                                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Informations Demandeur</h2>
+                            </div>
 
-                                    <div className="w-full xl:w-1/2">
-                                        <motion.label
-                                            className="mb-2.5 block text-black dark:text-white font-semibold"
-                                            whileHover={{ x: 5 }}
-                                        >
-                                            👤 Type de Personnel
-                                        </motion.label>
-                                        <div className="flex items-center gap-4 py-3">
-                                            {[
-                                                { value: "OUVRIER", emoji: "🔧" },
-                                                { value: "ETAM", emoji: "💼" },
-                                                { value: "CADRE", emoji: "👔" }
-                                            ].map((type) => (
-                                                <motion.label
-                                                    key={type.value}
-                                                    className="flex items-center gap-2 cursor-pointer capitalize"
-                                                    whileHover={{ scale: 1.05 }}
-                                                    whileTap={{ scale: 0.95 }}
-                                                >
-                                                    <input
-                                                        type="radio"
-                                                        name="personnelType"
-                                                        className="h-5 w-5 text-primary accent-primary"
-                                                        checked={formData.personnelType === type.value}
-                                                        onChange={() => handleChange("personnelType", type.value)}
-                                                    />
-                                                    <span className="font-medium">{type.emoji} {type.value.toLowerCase()}</span>
-                                                </motion.label>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </motion.div>
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        Responsable / Demandeur *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="responsable"
+                                        value={formData.responsable}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                        required
+                                    />
+                                </div>
 
-                                <motion.div
-                                    className="grid grid-cols-1 gap-6 xl:grid-cols-3"
-                                    variants={itemVariants}
-                                >
-                                    <div>
-                                        <motion.label
-                                            className="mb-2.5 block text-black dark:text-white font-semibold"
-                                            whileHover={{ x: 5 }}
-                                        >
-                                            🏢 Service
-                                        </motion.label>
-                                        <motion.input
-                                            type="text"
-                                            className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-form-strokedark dark:bg-form-input dark:text-white"
-                                            value={formData.service}
-                                            onChange={(e) => handleChange("service", e.target.value)}
-                                            whileFocus={{ scale: 1.02 }}
-                                            placeholder="Ex: Ressources Humaines"
-                                        />
-                                    </div>
-                                    <div>
-                                        <motion.label
-                                            className="mb-2.5 block text-black dark:text-white font-semibold"
-                                            whileHover={{ x: 5 }}
-                                        >
-                                            📍 Lieu de Travail
-                                        </motion.label>
-                                        <motion.input
-                                            type="text"
-                                            className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-form-strokedark dark:bg-form-input dark:text-white"
-                                            value={formData.workLocation}
-                                            onChange={(e) => handleChange("workLocation", e.target.value)}
-                                            whileFocus={{ scale: 1.02 }}
-                                            placeholder="Ex: Paris"
-                                        />
-                                    </div>
-                                    <div>
-                                        <motion.label
-                                            className="mb-2.5 block text-black dark:text-white font-semibold"
-                                            whileHover={{ x: 5 }}
-                                        >
-                                            🏭 BU
-                                        </motion.label>
-                                        <motion.input
-                                            type="text"
-                                            className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-form-strokedark dark:bg-form-input dark:text-white"
-                                            value={formData.businessUnit}
-                                            onChange={(e) => handleChange("businessUnit", e.target.value)}
-                                            whileFocus={{ scale: 1.02 }}
-                                            placeholder="Ex: BU France"
-                                        />
-                                    </div>
-                                </motion.div>
-                            </motion.div>
-                        )}
-
-                        {/* STEP 2: JOB DETAILS */}
-                        {currentStep === 1 && (
-                            <motion.div
-                                key="step-1"
-                                variants={containerVariants}
-                                initial="hidden"
-                                animate="visible"
-                                exit={{ opacity: 0, x: -50 }}
-                                className="flex flex-col gap-6"
-                            >
-                                <motion.div
-                                    className="flex flex-col gap-6 xl:flex-row"
-                                    variants={itemVariants}
-                                >
-                                    <div className="w-full xl:w-1/2">
-                                        <motion.label
-                                            className="mb-2.5 block text-black dark:text-white font-semibold"
-                                            whileHover={{ x: 5 }}
-                                        >
-                                            💼 Libellé du Poste
-                                        </motion.label>
-                                        <motion.input
-                                            type="text"
-                                            className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-form-strokedark dark:bg-form-input dark:text-white"
-                                            value={formData.jobTitle}
-                                            onChange={(e) => handleChange("jobTitle", e.target.value)}
-                                            whileFocus={{ scale: 1.02 }}
-                                            placeholder="Ex: Développeur Full Stack"
-                                        />
-                                    </div>
-                                    <div className="w-full xl:w-1/2">
-                                        <motion.label
-                                            className="mb-2.5 block text-black dark:text-white font-semibold"
-                                            whileHover={{ x: 5 }}
-                                        >
-                                            📆 Date souhaitée d'engagement
-                                        </motion.label>
-                                        <motion.div whileFocus={{ scale: 1.02 }}>
-                                            <Flatpickr
-                                                value={formData.desiredHiringDate}
-                                                onChange={([date]) => handleChange("desiredHiringDate", date)}
-                                                className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-form-strokedark dark:bg-form-input dark:text-white"
-                                            />
-                                        </motion.div>
-                                    </div>
-                                </motion.div>
-
-                                <motion.div
-                                    className="rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 p-6 dark:from-primary/10 dark:to-primary/20"
-                                    variants={itemVariants}
-                                >
-                                    <motion.label
-                                        className="mb-4 block font-bold text-lg text-black dark:text-white"
-                                        whileHover={{ x: 5 }}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        Département *
+                                    </label>
+                                    <select
+                                        name="departement"
+                                        value={formData.departement}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                        required
                                     >
-                                        📝 Type de Contrat
-                                    </motion.label>
-                                    <div className="flex gap-8">
-                                        {["CDI", "CDD"].map((type) => (
-                                            <motion.label
-                                                key={type}
-                                                className="flex items-center gap-3 cursor-pointer font-medium text-lg"
+                                        <option value="">Sélectionner un département</option>
+                                        {departments.map(dept => (
+                                            <option key={dept} value={dept}>{dept}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        Date de Visite
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="dateVisite"
+                                        value={formData.dateVisite}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        Email
+                                    </label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        Date Souhaitée
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="dateSouhaitee"
+                                        value={formData.dateSouhaitee}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        Type de Recrutement
+                                    </label>
+                                    <div className="flex gap-4 mt-2">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="typeRecrutement"
+                                                value="Interne"
+                                                checked={formData.typeRecrutement === 'Interne'}
+                                                onChange={handleInputChange}
+                                                className="w-4 h-4 text-primary focus:ring-primary"
+                                            />
+                                            <span className="text-gray-700 dark:text-gray-300">Interne</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="typeRecrutement"
+                                                value="Externe"
+                                                checked={formData.typeRecrutement === 'Externe'}
+                                                onChange={handleInputChange}
+                                                className="w-4 h-4 text-primary focus:ring-primary"
+                                            />
+                                            <span className="text-gray-700 dark:text-gray-300">Externe</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Profil Requis */}
+                        <motion.div
+                            className="border-l-4 border-green-500 pl-6"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 }}
+                        >
+                            <div className="flex items-center gap-3 mb-6">
+                                <Briefcase className="w-6 h-6 text-green-600" />
+                                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Profil Requis du Candidat</h2>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        Formation Requise / Compétences Complémentaires *
+                                    </label>
+                                    <textarea
+                                        name="formationRequise"
+                                        value={formData.formationRequise}
+                                        onChange={handleInputChange}
+                                        rows={3}
+                                        className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                        placeholder="Décrivez la formation et les compétences requises..."
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        Compétences Techniques et Comportementales
+                                    </label>
+                                    <textarea
+                                        name="competences"
+                                        value={formData.competences}
+                                        onChange={handleInputChange}
+                                        rows={3}
+                                        className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                        placeholder="Listez les compétences techniques et comportementales..."
+                                    />
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Concordance du Poste */}
+                        <motion.div
+                            className="border-l-4 border-purple-500 pl-6"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3 }}
+                        >
+                            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Concordance du Poste à Pourvoir</h2>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        Nature de la Demande
+                                    </label>
+                                    <div className="flex gap-4 mb-4">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="natureDemande"
+                                                value="creation"
+                                                checked={formData.natureDemande === 'creation'}
+                                                onChange={handleInputChange}
+                                                className="w-4 h-4 text-primary focus:ring-primary"
+                                            />
+                                            <span className="text-gray-700 dark:text-gray-300">Création</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="natureDemande"
+                                                value="remplacement"
+                                                checked={formData.natureDemande === 'remplacement'}
+                                                onChange={handleInputChange}
+                                                className="w-4 h-4 text-primary focus:ring-primary"
+                                            />
+                                            <span className="text-gray-700 dark:text-gray-300">Remplacement</span>
+                                        </label>
+                                    </div>
+
+                                    {formData.natureDemande === 'remplacement' && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            className="mb-4"
+                                        >
+                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                Remplacement de :
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="remplacementQui"
+                                                value={formData.remplacementQui}
+                                                onChange={handleInputChange}
+                                                className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                                placeholder="Nom de la personne à remplacer"
+                                            />
+                                        </motion.div>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        Justification de la Demande *
+                                    </label>
+                                    <textarea
+                                        name="justificationDemande"
+                                        value={formData.justificationDemande}
+                                        onChange={handleInputChange}
+                                        rows={4}
+                                        className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                        placeholder="Expliquez les raisons de cette demande de recrutement..."
+                                        required
+                                    />
+                                </div>
+
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                            Mode d'Embauche *
+                                        </label>
+                                        <select
+                                            name="modeEmbauche"
+                                            value={formData.modeEmbauche}
+                                            onChange={handleInputChange}
+                                            className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                            required
+                                        >
+                                            <option value="">Sélectionner le mode</option>
+                                            {modeEmbauche.map(mode => (
+                                                <option key={mode} value={mode}>{mode}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                            Site *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="site"
+                                            value={formData.site}
+                                            onChange={handleInputChange}
+                                            className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                            placeholder="TT, TTG, etc."
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Liste des Besoins */}
+                        <motion.div
+                            className="border-l-4 border-orange-500 pl-6"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.4 }}
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Liste des Besoins du Poste</h2>
+                                <motion.button
+                                    type="button"
+                                    onClick={addBesoin}
+                                    className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Ajouter
+                                </motion.button>
+                            </div>
+
+                            <div className="space-y-4">
+                                {formData.besoins.map((besoin, index) => (
+                                    <div key={index} className="flex gap-3">
+                                        <input
+                                            type="text"
+                                            value={besoin.description}
+                                            onChange={(e) => handleBesoinChange(index, e.target.value)}
+                                            className="flex-1 px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                            placeholder={`Besoin ${index + 1}...`}
+                                        />
+                                        {formData.besoins.length > 1 && (
+                                            <motion.button
+                                                type="button"
+                                                onClick={() => removeBesoin(index)}
+                                                className="px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                                                 whileHover={{ scale: 1.05 }}
                                                 whileTap={{ scale: 0.95 }}
                                             >
-                                                <input
-                                                    type="radio"
-                                                    name="contractType"
-                                                    className="h-6 w-6 text-primary accent-primary"
-                                                    checked={formData.contractType === type}
-                                                    onChange={() => handleChange("contractType", type)}
-                                                />
-                                                <span>{type}</span>
-                                            </motion.label>
-                                        ))}
+                                                <Trash2 className="w-5 h-5" />
+                                            </motion.button>
+                                        )}
                                     </div>
-                                </motion.div>
-                            </motion.div>
-                        )}
+                                ))}
+                            </div>
+                        </motion.div>
 
-                        {/* STEP 3: JUSTIFICATION */}
-                        {currentStep === 2 && (
-                            <motion.div
-                                key="step-2"
-                                variants={containerVariants}
-                                initial="hidden"
-                                animate="visible"
-                                exit={{ opacity: 0, x: -50 }}
-                                className="flex flex-col gap-6"
-                            >
-                                <motion.div
-                                    className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 p-6 dark:from-blue-900/20 dark:to-indigo-900/20"
-                                    variants={itemVariants}
-                                >
-                                    <h4 className="mb-6 font-bold text-xl text-primary">🎯 Motif de la demande</h4>
-                                    <div className="flex flex-col gap-4">
-                                        {[
-                                            { value: "REPLACEMENT", label: "En Remplacement", emoji: "🔄" },
-                                            { value: "BUDGETED", label: "Augmentation Effectif Budgété", emoji: "📊" },
-                                            { value: "NON_BUDGETED", label: "Augmentation Non Budgété", emoji: "📈" }
-                                        ].map((reason) => (
-                                            <div key={reason.value} className="flex flex-col gap-2">
-                                                <motion.label
-                                                    className="flex items-center gap-3 cursor-pointer font-medium text-lg"
-                                                    whileHover={{ x: 5 }}
-                                                >
-                                                    <input
-                                                        type="radio"
-                                                        name="reason"
-                                                        className="h-5 w-5 text-primary accent-primary"
-                                                        checked={formData.reason === reason.value}
-                                                        onChange={() => handleChange("reason", reason.value)}
-                                                    />
-                                                    <span>{reason.emoji} {reason.label}</span>
-                                                </motion.label>
-                                                {formData.reason === "REPLACEMENT" && reason.value === "REPLACEMENT" && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, height: 0 }}
-                                                        animate={{ opacity: 1, height: "auto" }}
-                                                        className="ml-8 flex flex-col gap-3"
-                                                    >
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Qui remplace-t-on ?"
-                                                            className="w-full rounded-lg border-2 border-stroke px-4 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-strokedark dark:bg-form-input"
-                                                            value={formData.replacementName}
-                                                            onChange={(e) => handleChange("replacementName", e.target.value)}
-                                                        />
-                                                        <select
-                                                            className="w-full rounded-lg border-2 border-stroke px-4 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-strokedark dark:bg-form-input"
-                                                            value={formData.departureReason}
-                                                            onChange={(e) => handleChange("departureReason", e.target.value)}
-                                                        >
-                                                            <option value="DEMISSION">Démission</option>
-                                                            <option value="MUTATION">Mutation</option>
-                                                            <option value="LICENCIEMENT">Licenciement</option>
-                                                            <option value="RETRAITE">Retraite</option>
-                                                            <option value="AUTRE">Autre</option>
-                                                        </select>
-                                                    </motion.div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </motion.div>
-
-                                <motion.div variants={itemVariants}>
-                                    <motion.label
-                                        className="mb-3 block font-semibold text-lg text-black dark:text-white"
-                                        whileHover={{ x: 5 }}
-                                    >
-                                        ✍️ Justification précise
-                                    </motion.label>
-                                    <motion.textarea
-                                        rows={4}
-                                        className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-form-strokedark dark:bg-form-input dark:text-white"
-                                        value={formData.justification}
-                                        onChange={(e) => handleChange("justification", e.target.value)}
-                                        whileFocus={{ scale: 1.01 }}
-                                        placeholder="Décrivez les raisons de cette demande..."
-                                    />
-                                </motion.div>
-
-                                <motion.div variants={itemVariants}>
-                                    <motion.label
-                                        className="mb-3 block font-semibold text-lg text-black dark:text-white"
-                                        whileHover={{ x: 5 }}
-                                    >
-                                        🎯 Caractéristiques du Poste
-                                    </motion.label>
-                                    <motion.textarea
-                                        rows={4}
-                                        className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-form-strokedark dark:bg-form-input dark:text-white"
-                                        value={formData.jobCharacteristics}
-                                        onChange={(e) => handleChange("jobCharacteristics", e.target.value)}
-                                        whileFocus={{ scale: 1.01 }}
-                                        placeholder="Décrivez les principales missions et responsabilités..."
-                                    />
-                                </motion.div>
-                            </motion.div>
-                        )}
-
-                        {/* STEP 4: REQUIREMENTS */}
-                        {currentStep === 3 && (
-                            <motion.div
-                                key="step-3"
-                                variants={containerVariants}
-                                initial="hidden"
-                                animate="visible"
-                                exit={{ opacity: 0, x: -50 }}
-                                className="flex flex-col gap-6"
-                            >
-                                <motion.div variants={itemVariants}>
-                                    <motion.label
-                                        className="mb-3 block font-semibold text-lg text-black dark:text-white"
-                                        whileHover={{ x: 5 }}
-                                    >
-                                        🎓 Formation Souhaitée
-                                    </motion.label>
-                                    <motion.textarea
-                                        rows={4}
-                                        className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-form-strokedark dark:bg-form-input dark:text-white"
-                                        value={formData.candidateEducation}
-                                        onChange={(e) => handleChange("candidateEducation", e.target.value)}
-                                        whileFocus={{ scale: 1.01 }}
-                                        placeholder="Ex: Bac+5 en informatique, Master en gestion..."
-                                    />
-                                </motion.div>
-
-                                <motion.div variants={itemVariants}>
-                                    <motion.label
-                                        className="mb-3 block font-semibold text-lg text-black dark:text-white"
-                                        whileHover={{ x: 5 }}
-                                    >
-                                        ⭐ Compétences Indispensables
-                                    </motion.label>
-                                    <motion.textarea
-                                        rows={4}
-                                        className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-form-strokedark dark:bg-form-input dark:text-white"
-                                        value={formData.candidateSkills}
-                                        onChange={(e) => handleChange("candidateSkills", e.target.value)}
-                                        whileFocus={{ scale: 1.01 }}
-                                        placeholder="Ex: React, Node.js, leadership, communication..."
-                                    />
-                                </motion.div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    {/* NAVIGATION BUTTONS */}
-                    <motion.div
-                        className="mt-10 flex justify-between border-t-2 border-stroke pt-6 dark:border-strokedark"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5 }}
-                    >
-                        <motion.button
-                            type="button"
-                            onClick={prevStep}
-                            disabled={currentStep === 0}
-                            className={`rounded-lg px-8 py-3 font-semibold border-2 border-stroke transition-all shadow-md ${currentStep === 0
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : "hover:bg-gray-100 hover:shadow-lg dark:border-strokedark dark:hover:bg-meta-4"
-                                }`}
-                            whileHover={currentStep !== 0 ? { scale: 1.05, x: -5 } : {}}
-                            whileTap={currentStep !== 0 ? { scale: 0.95 } : {}}
+                        {/* Responsable RH */}
+                        <motion.div
+                            className="border-l-4 border-indigo-500 pl-6"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.5 }}
                         >
-                            ⬅️ Précédent
-                        </motion.button>
+                            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Responsable RH</h2>
 
-                        {currentStep < STEPS.length - 1 ? (
-                            <motion.button
-                                type="button"
-                                onClick={nextStep}
-                                className="rounded-lg bg-gradient-to-r from-primary to-primary/80 px-8 py-3 font-semibold text-white shadow-lg transition-all hover:shadow-xl"
-                                whileHover={{ scale: 1.05, x: 5 }}
-                                whileTap={{ scale: 0.95 }}
-                            >
-                                Suivant ➡️
-                            </motion.button>
-                        ) : (
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        Nom Responsable RH
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="responsableRH"
+                                        value={formData.responsableRH}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        Date Demande RH
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="dateDemandeRH"
+                                        value={formData.dateDemandeRH}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                    />
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Coût et Délai */}
+                        <motion.div
+                            className="border-l-4 border-yellow-500 pl-6"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.6 }}
+                        >
+                            <div className="flex items-center gap-3 mb-6">
+                                <Calendar className="w-6 h-6 text-yellow-600" />
+                                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Coût du Recrutement et Délai</h2>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        Coût Estimé (TND)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="cout"
+                                        value={formData.cout}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                        placeholder="0.00"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        Délai (jours)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="delai"
+                                        value={formData.delai}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                        placeholder="30"
+                                    />
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Vérifications */}
+                        <motion.div
+                            className="border-l-4 border-red-500 pl-6"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.7 }}
+                        >
+                            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Vérifications</h2>
+
+                            <div className="space-y-4">
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        name="modelDepSort"
+                                        checked={formData.modelDepSort}
+                                        onChange={handleInputChange}
+                                        className="w-5 h-5 text-primary rounded focus:ring-2 focus:ring-primary accent-primary"
+                                    />
+                                    <span className="text-gray-700 dark:text-gray-300 font-medium">Model Dep Sort</span>
+                                </label>
+
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        name="crd"
+                                        checked={formData.crd}
+                                        onChange={handleInputChange}
+                                        className="w-5 h-5 text-primary rounded focus:ring-2 focus:ring-primary accent-primary"
+                                    />
+                                    <span className="text-gray-700 dark:text-gray-300 font-medium">CRD</span>
+                                </label>
+                            </div>
+                        </motion.div>
+
+                        {/* Informations Complémentaires */}
+                        <motion.div
+                            className="border-l-4 border-teal-500 pl-6"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.8 }}
+                        >
+                            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Informations Complémentaires</h2>
+
+                            <div className="grid md:grid-cols-3 gap-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        Utilisateur Final
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="utilisateurFinal"
+                                        value={formData.utilisateurFinal}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        CADRE
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="cadre"
+                                        value={formData.cadre}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        BU
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="bu"
+                                        value={formData.bu}
+                                        onChange={handleInputChange}
+                                        className="w-full px-4 py-3 border-2 border-stroke dark:border-dark-3 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-transparent dark:bg-gray-dark dark:text-white transition"
+                                    />
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Submit Button */}
+                        <motion.div
+                            className="flex justify-end pt-6 border-t-2 border-stroke dark:border-dark-3"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.9 }}
+                        >
                             <motion.button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="rounded-lg bg-gradient-to-r from-green-500 to-green-600 px-8 py-3 font-semibold text-white shadow-lg transition-all hover:shadow-xl disabled:opacity-70"
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                animate={isSubmitting ? { rotate: [0, 5, -5, 0] } : {}}
-                                transition={isSubmitting ? { repeat: Infinity, duration: 0.5 } : {}}
+                                className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary to-primary/80 text-white font-bold rounded-lg hover:shadow-xl transform transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                whileHover={{ scale: isSubmitting ? 1 : 1.05 }}
+                                whileTap={{ scale: isSubmitting ? 1 : 0.95 }}
                             >
-                                {isSubmitting ? "⏳ Envoi..." : "✅ Soumettre la Demande"}
+                                <Send className="w-5 h-5" />
+                                {isSubmitting ? 'Envoi en cours...' : 'Soumettre la Demande'}
                             </motion.button>
-                        )}
-                    </motion.div>
-                </form>
+                        </motion.div>
+                    </form>
+                </div>
+
+                <motion.div
+                    className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-primary rounded-lg"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1 }}
+                >
+                    <p className="text-sm text-blue-800 dark:text-blue-300">
+                        <strong>Note:</strong> Les champs marqués d'un astérisque (*) sont obligatoires.
+                        Assurez-vous de remplir tous les champs requis avant de soumettre votre demande.
+                    </p>
+                </motion.div>
             </motion.div>
-        </motion.div>
+        </div>
     );
-}
+};
+
+export default HiringRequestForm;

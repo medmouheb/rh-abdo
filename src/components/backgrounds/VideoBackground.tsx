@@ -2,19 +2,34 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { 
+    Users, 
+    Briefcase, 
+    TrendingUp, 
+    Shield, 
+    Zap, 
+    Target,
+    Award,
+    Rocket,
+    Star,
+    Sparkles
+} from "lucide-react";
 
 interface VideoBackgroundProps {
-    variant?: "abstract" | "particles" | "gradient";
+    variant?: "abstract" | "particles" | "gradient" | "video";
     overlay?: boolean;
     className?: string;
+    videoSrc?: string;
 }
 
 export default function VideoBackground({
     variant = "abstract",
     overlay = true,
-    className = ""
+    className = "",
+    videoSrc
 }: VideoBackgroundProps) {
     const [isLoaded, setIsLoaded] = useState(false);
+    const [videoError, setVideoError] = useState(false);
 
     // Fallback animated background if video fails to load
     const AnimatedFallback = () => (
@@ -86,10 +101,74 @@ export default function VideoBackground({
         </div>
     );
 
+    // Animated Icons Component
+    const AnimatedIcons = () => {
+        const icons = [
+            { Icon: Users, delay: 0, x: "10%", y: "15%" },
+            { Icon: Briefcase, delay: 0.5, x: "85%", y: "20%" },
+            { Icon: TrendingUp, delay: 1, x: "15%", y: "75%" },
+            { Icon: Shield, delay: 1.5, x: "80%", y: "70%" },
+            { Icon: Zap, delay: 2, x: "50%", y: "10%" },
+            { Icon: Target, delay: 2.5, x: "5%", y: "50%" },
+            { Icon: Award, delay: 3, x: "95%", y: "60%" },
+            { Icon: Rocket, delay: 3.5, x: "45%", y: "85%" },
+            { Icon: Star, delay: 4, x: "70%", y: "30%" },
+            { Icon: Sparkles, delay: 4.5, x: "25%", y: "45%" },
+        ];
+
+        return (
+            <>
+                {icons.map(({ Icon, delay, x, y }, i) => (
+                    <motion.div
+                        key={i}
+                        className="absolute text-white/20"
+                        style={{ left: x, top: y }}
+                        initial={{ opacity: 0, scale: 0, rotate: -180 }}
+                        animate={{
+                            opacity: [0, 0.3, 0.2, 0.3, 0],
+                            scale: [0, 1.2, 1, 1.2, 0],
+                            rotate: [0, 180, 360],
+                            y: [0, -30, 0],
+                        }}
+                        transition={{
+                            duration: 8,
+                            repeat: Infinity,
+                            delay: delay,
+                            ease: "easeInOut",
+                        }}
+                    >
+                        <Icon className="w-12 h-12 md:w-16 md:h-16" strokeWidth={1.5} />
+                    </motion.div>
+                ))}
+            </>
+        );
+    };
+
     return (
         <div className={`fixed inset-0 -z-10 overflow-hidden ${className}`}>
-            {/* CSS-based animated background (always visible) */}
+            {/* Video Background (if provided and no error) */}
+            {variant === "video" && videoSrc && !videoError && (
+                <motion.video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 1 }}
+                    onLoadedData={() => setIsLoaded(true)}
+                    onError={() => setVideoError(true)}
+                >
+                    <source src={videoSrc} type="video/mp4" />
+                </motion.video>
+            )}
+
+            {/* CSS-based animated background (always visible as fallback or primary) */}
             <AnimatedFallback />
+            
+            {/* Animated Icons Overlay */}
+            <AnimatedIcons />
 
             {/* Overlay gradient for better text readability */}
             {overlay && (
