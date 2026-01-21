@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 export interface IUser extends Document {
     username: string;
     password: string;
-    role: 'rh' | 'manager' | 'directeur' | 'REQUESTER' | 'RECRUITER' | 'PLANT_MANAGER' | 'HR_MANAGER';
+    role: 'rh' | 'manager' | 'directeur' | 'REQUESTER' | 'RECRUITER' | 'PLANT_MANAGER' | 'HR_MANAGER' | 'co';
     createdAt: Date;
     updatedAt: Date;
     comparePassword(candidatePassword: string): Promise<boolean>;
@@ -26,7 +26,7 @@ const UserSchema = new Schema<IUser>(
         },
         role: {
             type: String,
-            enum: ['rh', 'manager', 'directeur', 'REQUESTER', 'RECRUITER', 'PLANT_MANAGER', 'HR_MANAGER'],
+            enum: ['rh', 'manager', 'directeur', 'REQUESTER', 'RECRUITER', 'PLANT_MANAGER', 'HR_MANAGER', 'co'],
             default: 'REQUESTER',
             required: true,
         },

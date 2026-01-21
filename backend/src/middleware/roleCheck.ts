@@ -24,5 +24,5 @@ export const requireRole = (allowedRoles: UserRole[]) => {
 
 // Specific role middleware shortcuts
 export const requireRH = requireRole(['rh']);
-export const requireManagerOrAbove = requireRole(['rh', 'manager', 'directeur']);
+export const requireManagerOrAbove = requireRole(['rh', 'manager', 'directeur','co']);
 export const requireDirecteurOrRH = requireRole(['rh', 'directeur']);

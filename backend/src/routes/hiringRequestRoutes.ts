@@ -14,10 +14,10 @@ const router = Router();
 // All routes require authentication
 router.use(authMiddleware);
 
-router.post('/', requireRole(['rh', 'manager', 'directeur']), createHiringRequest);
+router.post('/', requireRole(['rh', 'manager', 'directeur','co']), createHiringRequest);
 router.get('/', getHiringRequests);
 router.get('/:id', getHiringRequestById);
-router.put('/:id', requireRole(['rh', 'manager', 'directeur']), updateHiringRequest);
-router.delete('/:id', requireRole(['rh', 'manager', 'directeur']), deleteHiringRequest);
+router.put('/:id', requireRole(['rh', 'manager', 'directeur','co']), updateHiringRequest);
+router.delete('/:id', requireRole(['rh', 'manager', 'directeur','co']), deleteHiringRequest);
 
 export default router;

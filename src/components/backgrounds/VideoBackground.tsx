@@ -2,12 +2,13 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { 
-    Users, 
-    Briefcase, 
-    TrendingUp, 
-    Shield, 
-    Zap, 
+import { useHasMounted } from "@/hooks/useHasMounted";
+import {
+    Users,
+    Briefcase,
+    TrendingUp,
+    Shield,
+    Zap,
     Target,
     Award,
     Rocket,
@@ -30,6 +31,7 @@ export default function VideoBackground({
 }: VideoBackgroundProps) {
     const [isLoaded, setIsLoaded] = useState(false);
     const [videoError, setVideoError] = useState(false);
+    const hasMounted = useHasMounted();
 
     // Fallback animated background if video fails to load
     const AnimatedFallback = () => (
@@ -76,8 +78,8 @@ export default function VideoBackground({
                 />
             ))}
 
-            {/* Particle effect */}
-            {[...Array(30)].map((_, i) => (
+            {/* Particle effect - Only render on client to avoid hydration mismatch due to Math.random() */}
+            {hasMounted && [...Array(30)].map((_, i) => (
                 <motion.div
                     key={`particle-${i}`}
                     className="absolute w-1 h-1 bg-white/60 rounded-full"
@@ -166,7 +168,7 @@ export default function VideoBackground({
 
             {/* CSS-based animated background (always visible as fallback or primary) */}
             <AnimatedFallback />
-            
+
             {/* Animated Icons Overlay */}
             <AnimatedIcons />
 

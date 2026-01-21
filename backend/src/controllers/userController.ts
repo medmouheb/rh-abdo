@@ -5,6 +5,7 @@ import { User } from '../models/User';
 export const createUser = async (req: Request, res: Response): Promise<void> => {
     try {
         const { username, password, role } = req.body;
+        console.log('Create user request body:', req.body);
 
         // Validate input
         if (!username || !password || !role) {
@@ -13,7 +14,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         }
 
         // Validate role
-        if (!['rh', 'manager', 'directeur'].includes(role)) {
+        if (!['rh', 'manager', 'directeur','co'].includes(role)) {
             res.status(400).json({ error: 'Invalid role. Must be rh, manager, or directeur' });
             return;
         }
@@ -93,7 +94,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
         if (username) user.username = username;
         if (password) user.password = password; // Will be hashed by pre-save hook
         if (role) {
-            if (!['rh', 'manager', 'directeur'].includes(role)) {
+            if (!['rh', 'manager', 'directeur','co'].includes(role)) {
                 res.status(400).json({ error: 'Invalid role. Must be rh, manager, or directeur' });
                 return;
             }

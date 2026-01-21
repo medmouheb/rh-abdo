@@ -22,21 +22,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  console.log("🔒 AuthProvider: Rendering...");
-
-  if (typeof window !== 'undefined') {
-    console.log("🔒 AuthProvider: CRASH TEST INITIATED");
-    // throw new Error("CRASH TEST: AUTH PROVIDER IS MOUNTING");
-  }
-
   // Load user from backend on mount (using cookie)
   useEffect(() => {
-    console.log("🔒 AuthProvider: useEffect mounted! Starting user fetch...");
     const fetchUser = async () => {
       try {
-        console.log("🔒 AuthProvider: Calling authService.getCurrentUser()...");
         const data = await authService.getCurrentUser();
-        console.log("🔒 AuthProvider: User fetched successfully:", data);
 
         const userData = data.user || data;
 
@@ -51,7 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         // Fallback: If on a protected route, redirect to login
         if (!window.location.pathname.startsWith('/auth')) {
-          console.log("🔒 AuthProvider: Redirecting to /auth/sign-in");
           router.push('/auth/sign-in');
         }
       } finally {
