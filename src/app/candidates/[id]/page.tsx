@@ -87,7 +87,7 @@ export default function CandidateDetailPage() {
                 const updatedCandidate = await response.json();
                 setCandidate(updatedCandidate);
                 setEditingOpinion(null);
-                
+
                 // Show message if status was automatically updated
                 const oldStatus = candidate.status;
                 if (updatedCandidate.status !== oldStatus) {
@@ -238,9 +238,7 @@ export default function CandidateDetailPage() {
                             <InfoItem label="Genre" value={candidate.gender === "MALE" ? "Masculin" : "Féminin"} icon="⚧️" />
                             <InfoItem label="Situation Familiale" value={candidate.familySituation || "-"} icon="👨‍👩‍👧‍👦" />
                             <InfoItem label="Adresse" value={candidate.address || "-"} icon="🏠" className="md:col-span-2" />
-                            <InfoItem label="Code Postal" value={candidate.postalCode || "-"} icon="📮" />
-                            <InfoItem label="Ville" value={candidate.city || "-"} icon="🌆" />
-                            <InfoItem label="Pays" value={candidate.country || "-"} icon="🌍" />
+
                         </div>
                     </motion.div>
 
@@ -258,7 +256,7 @@ export default function CandidateDetailPage() {
                             <InfoItem label="Poste Visé" value={candidate.positionAppliedFor} icon="🎯" />
                             <InfoItem label="Département" value={candidate.department || "-"} icon="🏢" />
                             <InfoItem label="Spécialité" value={candidate.specialty || "-"} icon="⚙️" />
-                            <InfoItem label="Niveau" value={candidate.level || "-"} icon="📊" />
+
                             <InfoItem label="Niveau d'Étude" value={candidate.educationLevel || "-"} icon="🎓" />
                             <InfoItem label="Spécialité d'Étude" value={candidate.studySpecialty || "-"} icon="📚" />
                             <InfoItem label="Expérience" value={candidate.yearsOfExperience ? `${candidate.yearsOfExperience} ans` : "-"} icon="📈" />
@@ -673,7 +671,7 @@ export default function CandidateDetailPage() {
                                             </div>
                                             {historyItem.oldStatus && (
                                                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-                                                    <span className="font-medium">De:</span> {historyItem.oldStatus} 
+                                                    <span className="font-medium">De:</span> {historyItem.oldStatus}
                                                     <span className="mx-2">→</span>
                                                     <span className="font-medium">Vers:</span> {historyItem.newStatus}
                                                 </p>

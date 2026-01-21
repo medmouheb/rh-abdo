@@ -24,15 +24,13 @@ export default function EditCandidatePage() {
         birthDate: new Date(),
         gender: "MALE",
         address: "",
-        postalCode: "",
-        city: "",
-        country: "",
+
 
         // Professional Info
         positionAppliedFor: "",
         department: "",
         specialty: "",
-        level: "",
+
         yearsOfExperience: 0,
         language: "",
 
@@ -78,14 +76,12 @@ export default function EditCandidatePage() {
                         birthDate: candidate.birthDate ? new Date(candidate.birthDate) : new Date(),
                         gender: candidate.gender,
                         address: candidate.address || "",
-                        postalCode: candidate.postalCode || "",
-                        city: candidate.city || "",
-                        country: candidate.country || "",
+
 
                         positionAppliedFor: candidate.positionAppliedFor,
                         department: candidate.department || "",
                         specialty: candidate.specialty || "",
-                        level: candidate.level || "",
+
                         yearsOfExperience: candidate.yearsOfExperience || 0,
                         language: candidate.language || "",
 
@@ -159,7 +155,7 @@ export default function EditCandidatePage() {
                 department: formData.department || null,
                 specialty: formData.specialty || null,
                 studySpecialty: formData.studySpecialty || null,
-                level: formData.level || null,
+
                 educationLevel: formData.educationLevel || null,
                 language: formData.language || null,
                 source: formData.source || null,
@@ -171,9 +167,7 @@ export default function EditCandidatePage() {
                 recruiterComments: formData.recruiterComments || null,
                 familySituation: formData.familySituation || null,
                 address: formData.address || null,
-                postalCode: formData.postalCode || null,
-                city: formData.city || null,
-                country: formData.country || null,
+
                 gender: formData.gender || null,
 
                 // Numbers -> null if 0 or NaN (optional)
@@ -356,41 +350,7 @@ export default function EditCandidatePage() {
                                 />
                             </div>
 
-                            <div>
-                                <label className="mb-2.5 block text-black dark:text-white font-medium">
-                                    Code Postal
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.postalCode}
-                                    onChange={(e) => handleChange("postalCode", e.target.value)}
-                                    className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                />
-                            </div>
 
-                            <div>
-                                <label className="mb-2.5 block text-black dark:text-white font-medium">
-                                    Ville
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.city}
-                                    onChange={(e) => handleChange("city", e.target.value)}
-                                    className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="mb-2.5 block text-black dark:text-white font-medium">
-                                    Pays
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.country}
-                                    onChange={(e) => handleChange("country", e.target.value)}
-                                    className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                />
-                            </div>
                         </div>
                     </motion.div>
 
@@ -459,22 +419,7 @@ export default function EditCandidatePage() {
                                 />
                             </div>
 
-                            <div>
-                                <label className="mb-2.5 block text-black dark:text-white font-medium">
-                                    Niveau
-                                </label>
-                                <select
-                                    value={formData.level}
-                                    onChange={(e) => handleChange("level", e.target.value)}
-                                    className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                >
-                                    <option value="">Sélectionner</option>
-                                    <option value="JUNIOR">Junior</option>
-                                    <option value="INTERMEDIATE">Intermédiaire</option>
-                                    <option value="SENIOR">Senior</option>
-                                    <option value="EXPERT">Expert</option>
-                                </select>
-                            </div>
+
 
                             <div>
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">

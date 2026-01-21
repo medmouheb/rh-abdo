@@ -4,6 +4,7 @@
   "private": true,
   "main": "electron/main.js",
   "scripts": {
+    "dev:all": "concurrently \"npm run dev\" \"cd backend && npm run dev\"",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

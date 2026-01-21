@@ -27,6 +27,12 @@ export const createCandidate = async (req: Request, res: Response): Promise<void
 export const getCandidates = async (req: Request, res: Response): Promise<void> => {
     try {
         const candidates = await Candidate.find().populate('hiringRequestId');
+        console.log(`🔍 DEBUG: Found ${candidates.length} candidates in DB`);
+        if (candidates.length > 0) {
+            console.log("Sample candidate:", candidates[0]);
+        } else {
+            console.log("⚠️ No candidates found in DB 'rh-abdo'. Check collection name?");
+        }
         res.json({ success: true, data: candidates });
     } catch (error) {
         console.error('Get candidates error:', error);

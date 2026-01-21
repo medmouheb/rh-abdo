@@ -14,6 +14,7 @@ import hiringRequestRoutes from './routes/hiringRequestRoutes';
 import candidateRoutes from './routes/candidateRoutes';
 import interviewRoutes from './routes/interviewRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import vacantPositionRoutes from './routes/vacantPositionRoutes';
 
 // Load environment variables
 dotenv.config();

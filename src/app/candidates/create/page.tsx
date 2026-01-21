@@ -25,15 +25,13 @@ export default function CreateCandidatePage() {
         birthDate: new Date(),
         gender: "MALE",
         address: "",
-        postalCode: "",
-        city: "",
-        country: "",
+
 
         // Professional Info
         positionAppliedFor: "",
         department: "",
         specialty: "",
-        level: "",
+
         yearsOfExperience: 0,
         language: "",
 
@@ -61,7 +59,7 @@ export default function CreateCandidatePage() {
             const result = await getVacantPositions();
             if (result.data) {
                 setVacantPositions(result.data);
-                
+
                 // Get hiringRequestId from URL params and set it in form after positions are loaded
                 const hiringRequestIdParam = searchParams.get('hiringRequestId');
                 if (hiringRequestIdParam) {
@@ -74,7 +72,7 @@ export default function CreateCandidatePage() {
                                 ...prev,
                                 hiringRequestId: id,
                             }));
-                            
+
                             // Auto-fill department and job title
                             const selectedPosition = result.data.find((p: any) => p.id === id);
                             if (selectedPosition) {
@@ -326,47 +324,7 @@ export default function CreateCandidatePage() {
                                 />
                             </div>
 
-                            <div>
-                                <label className="mb-2.5 block text-black dark:text-white font-medium">
-                                    Code Postal
-                                </label>
-                                <motion.input
-                                    type="text"
-                                    value={formData.postalCode}
-                                    onChange={(e) => handleChange("postalCode", e.target.value)}
-                                    className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="Ex: 1000"
-                                    whileFocus={{ scale: 1.02 }}
-                                />
-                            </div>
 
-                            <div>
-                                <label className="mb-2.5 block text-black dark:text-white font-medium">
-                                    Ville
-                                </label>
-                                <motion.input
-                                    type="text"
-                                    value={formData.city}
-                                    onChange={(e) => handleChange("city", e.target.value)}
-                                    className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="Ex: Tunis"
-                                    whileFocus={{ scale: 1.02 }}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="mb-2.5 block text-black dark:text-white font-medium">
-                                    Pays
-                                </label>
-                                <motion.input
-                                    type="text"
-                                    value={formData.country}
-                                    onChange={(e) => handleChange("country", e.target.value)}
-                                    className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                    placeholder="Ex: Tunisie"
-                                    whileFocus={{ scale: 1.02 }}
-                                />
-                            </div>
                         </div>
                     </motion.div>
 
@@ -441,22 +399,7 @@ export default function CreateCandidatePage() {
                                 />
                             </div>
 
-                            <div>
-                                <label className="mb-2.5 block text-black dark:text-white font-medium">
-                                    Niveau
-                                </label>
-                                <select
-                                    value={formData.level}
-                                    onChange={(e) => handleChange("level", e.target.value)}
-                                    className="w-full rounded-lg border-2 border-stroke bg-transparent px-5 py-3 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-dark-3 dark:bg-dark-2"
-                                >
-                                    <option value="">Sélectionner</option>
-                                    <option value="JUNIOR">Junior</option>
-                                    <option value="INTERMEDIATE">Intermédiaire</option>
-                                    <option value="SENIOR">Senior</option>
-                                    <option value="EXPERT">Expert</option>
-                                </select>
-                            </div>
+
 
                             <div>
                                 <label className="mb-2.5 block text-black dark:text-white font-medium">
@@ -528,7 +471,7 @@ export default function CreateCandidatePage() {
 
                     {/* Financial & Administrative Info */}
                     <motion.div
-                        className="mb-8"
+                        className="mb-8 opacity-50 pointer-events-none grayscale select-none relative"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.55 }}
@@ -613,7 +556,7 @@ export default function CreateCandidatePage() {
 
                     {/* Initial Opinions (Optional) */}
                     <motion.div
-                        className="mb-8"
+                        className="mb-8 opacity-50 pointer-events-none grayscale select-none relative"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.58 }}

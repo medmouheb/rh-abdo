@@ -38,10 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await authService.getCurrentUser();
         console.log("🔒 AuthProvider: User fetched successfully:", data);
 
+        const userData = data.user || data;
+
         setUser({
-          userId: data.user.id,
-          username: data.user.username,
-          role: data.user.role,
+          userId: userData.id || userData._id,
+          username: userData.username,
+          role: userData.role,
         });
       } catch (error: any) {
         console.error("🔒 AuthProvider: User fetch failed:", error);

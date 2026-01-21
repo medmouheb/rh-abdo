@@ -43,8 +43,11 @@ export function DashboardKPICards() {
         fetch("/api/candidates"),
       ]);
 
-      const positions = positionsRes.ok ? await positionsRes.json() : [];
-      const candidates = candidatesRes.ok ? await candidatesRes.json() : [];
+      const positionsResult = positionsRes.ok ? await positionsRes.json() : {};
+      const candidatesResult = candidatesRes.ok ? await candidatesRes.json() : {};
+
+      const positions = positionsResult.data || [];
+      const candidates = candidatesResult.data || [];
 
       // Calculate vacant positions stats
       const vacantPositions = {

@@ -1,33 +1,23 @@
-# Backend Dockerfile
-FROM node:20-alpine
+FROM node:18-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy backend package files
+COPY backend/package.json ./
+# Copy tsconfig (if custom, else use default)
+COPY backend/tsconfig.json ./
 
-# Install dependencies (including dev dependencies for build)
-RUN npm ci
+# Install dependencies (Mongoose, Express, etc.)
+RUN npm install
 
 # Copy source code
-COPY . .
+COPY backend/src ./src
 
 # Build TypeScript
 RUN npm run build
 
-# Remove dev dependencies
-RUN npm prune --production
-
 # Expose port
-EXPOSE 5000
+EXPOSE 3001
 
-# Create uploads directory
-RUN mkdir -p uploads
-
-# Copy entrypoint script
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# Use entrypoint script
-ENTRYPOINT ["docker-entrypoint.sh"]
+# Start the application
+CMD ["npm", "start"]

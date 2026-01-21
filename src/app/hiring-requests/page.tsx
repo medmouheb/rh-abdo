@@ -10,7 +10,8 @@ import { apiRequest } from '@/lib/api-client';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface HiringRequest {
-  id: number;
+  _id?: string;
+  id?: number | string; // Made id optional
   jobTitle: string;
   service: string;
   workLocation?: string;
@@ -66,12 +67,21 @@ const HiringRequestsPage = () => {
   });
 
   const [formData, setFormData] = useState({
-    jobTitle: '',
+    requestDate: new Date().toISOString().split('T')[0],
     service: '',
-    justification: '',
     workLocation: '',
-    contractType: '',
+    businessUnit: '',
     personnelType: 'CADRE',
+    jobTitle: '',
+    desiredHiringDate: '',
+    reason: 'REPLACEMENT', // Default
+    replacementName: '',
+    departureReason: '',
+    dateRangeStart: '',
+    dateRangeEnd: '',
+    contractType: 'CDI',
+    justification: '',
+    jobCharacteristics: '',
     candidateEducation: '',
     candidateSkills: '',
   });
@@ -100,8 +110,8 @@ const HiringRequestsPage = () => {
     try {
       const response = await apiRequest('/api/hiring-requests');
       if (response.ok) {
-        const data = await response.json();
-        setHiringRequests(data);
+        const result = await response.json();
+        setHiringRequests(result.data || []);
       }
     } catch (error) {
       console.error('Error fetching hiring requests:', error);
@@ -116,33 +126,34 @@ const HiringRequestsPage = () => {
   };
 
   const handleSubmitRequest = async () => {
-    if (!formData.jobTitle || !formData.service || !formData.justification) {
-      alert('Veuillez remplir tous les champs obligatoires');
+    const requiredFields = [
+      'requestDate', 'service', 'workLocation', 'jobTitle',
+      'desiredHiringDate', 'reason', 'contractType',
+      'justification', 'jobCharacteristics', 'candidateEducation', 'candidateSkills'
+    ];
+
+    const missing = requiredFields.filter(field => !formData[field as keyof typeof formData]);
+    if (missing.length > 0) {
+      alert(`Veuillez remplir tous les champs obligatoires: ${missing.join(', ')}`);
       return;
     }
 
     try {
-      const response = await apiRequest('/api/hiring-request', {
+      const response = await apiRequest('/api/hiring-requests', {
         method: 'POST',
-        body: JSON.stringify({
-          jobTitle: formData.jobTitle,
-          service: formData.service,
-          workLocation: formData.workLocation || 'TT',
-          contractType: formData.contractType || 'CDI',
-          personnelType: formData.personnelType,
-          justification: formData.justification,
-          jobCharacteristics: formData.candidateSkills || '',
-          candidateEducation: formData.candidateEducation || '',
-          candidateSkills: formData.candidateSkills || '',
-          reason: 'REPLACEMENT',
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
 
       if (response.ok) {
         alert('Demande d\'embauche créée avec succès!');
         setFormData({
-          jobTitle: '', service: '', justification: '', workLocation: '',
-          contractType: '', personnelType: 'CADRE', candidateEducation: '', candidateSkills: '',
+          requestDate: new Date().toISOString().split('T')[0],
+          service: '', workLocation: '', businessUnit: '', personnelType: 'CADRE',
+          jobTitle: '', desiredHiringDate: '', reason: 'REPLACEMENT',
+          replacementName: '', departureReason: '', dateRangeStart: '', dateRangeEnd: '',
+          contractType: 'CDI', justification: '', jobCharacteristics: '',
+          candidateEducation: '', candidateSkills: ''
         });
         setShowForm(false);
         fetchHiringRequests();
@@ -306,80 +317,161 @@ const HiringRequestsPage = () => {
                 </button>
               </div>
 
-              <div className="p-8 max-h-[80vh] overflow-y-auto">
-                <div className="grid md:grid-cols-2 gap-6 mb-6">
+              <div className="p-8 max-h-[80vh] overflow-y-auto space-y-6">
+
+                {/* Header: Date, Service, Location */}
+                <div className="grid md:grid-cols-3 gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Titre du Poste *</label>
-                    <input
-                      type="text"
-                      name="jobTitle"
-                      value={formData.jobTitle}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="Ex: Ingénieur Qualité"
-                    />
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">DATE *</label>
+                    <input type="date" name="requestDate" value={formData.requestDate} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Département *</label>
-                    <select
-                      name="service"
-                      value={formData.service}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    >
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Service *</label>
+                    <select name="service" value={formData.service} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
                       <option value="">Sélectionner</option>
                       {departments.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Site</label>
-                    <input
-                      type="text"
-                      name="workLocation"
-                      value={formData.workLocation}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="TT, TTG..."
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Type Contrat</label>
-                    <select
-                      name="contractType"
-                      value={formData.contractType}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Sélectionner</option>
-                      {contractTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Lieu de Travail *</label>
+                      <input type="text" name="workLocation" value={formData.workLocation} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Ex: Tunis" />
+                    </div>
+                    <div className="w-24">
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">BU</label>
+                      <input type="text" name="businessUnit" value={formData.businessUnit} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="ex: TES" />
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Justification *</label>
-                    <textarea
-                      name="justification"
-                      value={formData.justification}
-                      onChange={handleInputChange}
-                      rows={3}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="Raison du recrutement..."
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Compétences Requises</label>
-                    <textarea
-                      name="candidateSkills"
-                      value={formData.candidateSkills}
-                      onChange={handleInputChange}
-                      rows={3}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="Compétences techniques et soft skills..."
-                    />
+                {/* Personnel Type Checkboxes */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Catégorie *</label>
+                  <div className="flex gap-6">
+                    {personnelTypes.map(type => (
+                      <label key={type} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="personnelType"
+                          value={type}
+                          checked={formData.personnelType === type}
+                          onChange={handleInputChange}
+                          className="w-4 h-4 text-blue-600"
+                        />
+                        {type}
+                      </label>
+                    ))}
                   </div>
                 </div>
+
+                {/* Job Title & Desired Date */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Libellé du Poste à Pourvoir *</label>
+                    <input type="text" name="jobTitle" value={formData.jobTitle} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Date souhaitée d'engagement *</label>
+                    <input type="date" name="desiredHiringDate" value={formData.desiredHiringDate} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  </div>
+                </div>
+
+                {/* Reason Section */}
+                <div className="border border-gray-200 dark:border-strokedark p-4 rounded-lg bg-gray-50 dark:bg-meta-4/10">
+                  <label className="block text-sm font-bold text-gray-800 dark:text-white mb-3">Motif de la demande *</label>
+                  <div className="space-y-4">
+                    {/* Replacement */}
+                    <div>
+                      <label className="flex items-center gap-2 cursor-pointer mb-2">
+                        <input type="radio" name="reason" value="REPLACEMENT" checked={formData.reason === 'REPLACEMENT'} onChange={handleInputChange} />
+                        En Remplacement de :
+                      </label>
+                      {formData.reason === 'REPLACEMENT' && (
+                        <div className="ml-6 grid md:grid-cols-2 gap-4">
+                          <input type="text" name="replacementName" value={formData.replacementName} onChange={handleInputChange} className="px-3 py-1 border border-gray-300 rounded w-full" placeholder="Nom du remplacé" />
+                          <select name="departureReason" value={formData.departureReason} onChange={handleInputChange} className="px-3 py-1 border border-gray-300 rounded w-full">
+                            <option value="">Motif de départ...</option>
+                            <option value="DEMISSION">Démission</option>
+                            <option value="MUTATION">Mutation</option>
+                            <option value="LICENCIEMENT">Licenciement</option>
+                            <option value="RETRAITE">Retraite</option>
+                            <option value="AUTRE">Autre</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Budgeted Increase */}
+                    <div>
+                      <label className="flex items-center gap-2 cursor-pointer mb-2">
+                        <input type="radio" name="reason" value="BUDGETED_INCREASE" checked={formData.reason === 'BUDGETED_INCREASE'} onChange={handleInputChange} />
+                        En Augmentation d'Effectif Budgété
+                      </label>
+                      {formData.reason === 'BUDGETED_INCREASE' && (
+                        <div className="ml-6 flex items-center gap-2 text-sm flex-wrap">
+                          <span>Préciser du</span>
+                          <input type="date" name="dateRangeStart" value={formData.dateRangeStart} onChange={handleInputChange} className="px-2 py-1 border border-gray-300 rounded" />
+                          <span>au</span>
+                          <input type="date" name="dateRangeEnd" value={formData.dateRangeEnd} onChange={handleInputChange} className="px-2 py-1 border border-gray-300 rounded" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Non Budgeted Increase */}
+                    <div>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="reason" value="NON_BUDGETED_INCREASE" checked={formData.reason === 'NON_BUDGETED_INCREASE'} onChange={handleInputChange} />
+                        En Augmentation d'Effectif Non Budgété
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contract Type */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Type de Contrat *</label>
+                  <div className="flex gap-6">
+                    {['CDI', 'CDD'].map(type => (
+                      <label key={type} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="contractType"
+                          value={type}
+                          checked={formData.contractType === type}
+                          onChange={handleInputChange}
+                          className="w-4 h-4 text-blue-600"
+                        />
+                        {type}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Justification & Characteristics */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Justification précise de la demande *</label>
+                    <textarea name="justification" value={formData.justification} onChange={handleInputChange} rows={3} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Caractéristiques du Poste à Pourvoir *</label>
+                    <textarea name="jobCharacteristics" value={formData.jobCharacteristics} onChange={handleInputChange} rows={3} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  </div>
+                </div>
+
+                {/* Candidate Requirements */}
+                <div className="space-y-4 border-t border-gray-200 dark:border-strokedark pt-4">
+                  <h3 className="font-bold text-gray-800 dark:text-white">Caractéristiques requises du Candidat :</h3>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">1. Formation souhaitée *</label>
+                    <input type="text" name="candidateEducation" value={formData.candidateEducation} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Ex: Ingénieur, Technicien Supérieur..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">2. Connaissances / Compétences indispensables *</label>
+                    <textarea name="candidateSkills" value={formData.candidateSkills} onChange={handleInputChange} rows={3} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  </div>
+                </div>
+
               </div>
 
               <div className="p-6 border-t border-gray-200 dark:border-strokedark flex justify-end gap-3 bg-gray-50 dark:bg-meta-4/30 rounded-b-xl">
@@ -424,7 +516,7 @@ const HiringRequestsPage = () => {
             >
               {hiringRequests.map(req => (
                 <motion.div
-                  key={req.id}
+                  key={req._id || req.id}
                   variants={item}
                   className="bg-white dark:bg-boxdark rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border border-slate-100 dark:border-strokedark relative overflow-hidden group"
                 >
@@ -445,7 +537,7 @@ const HiringRequestsPage = () => {
                             {req.personnelType}
                           </span>
                         )}
-                        <span className="text-xs text-slate-400">#{req.id.toString().padStart(4, '0')}</span>
+                        <span className="text-xs text-slate-400">#{req.id ? req.id.toString().padStart(4, '0') : (req._id ? req._id.toString().slice(-4) : '????')}</span>
                       </div>
 
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-y-3 gap-x-8 text-sm text-slate-600 dark:text-slate-300 mt-4">

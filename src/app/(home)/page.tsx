@@ -23,9 +23,9 @@ import AnimatedBackground from "@/components/backgrounds/AnimatedBackground";
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-export default function Home() {
+export default async function Home() {
   // Server-side auth check
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const accessToken = cookieStore.get('accessToken');
 
   if (!accessToken) {

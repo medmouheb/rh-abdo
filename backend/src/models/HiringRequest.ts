@@ -90,5 +90,6 @@ const HiringRequestSchema = new Schema<IHiringRequest>(
 
 export const HiringRequest = mongoose.model<IHiringRequest>(
     'HiringRequest',
-    HiringRequestSchema
+    HiringRequestSchema,
+    'HiringRequest'
 );

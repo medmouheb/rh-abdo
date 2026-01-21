@@ -26,7 +26,8 @@ export function CandidatesByDepartmentGender() {
         try {
             const response = await fetch('/api/candidates');
             if (response.ok) {
-                const candidates = await response.json();
+                const result = await response.json();
+                const candidates = result.data || [];
 
                 // Calculate stats
                 const byDepartment: { [key: string]: number } = {};

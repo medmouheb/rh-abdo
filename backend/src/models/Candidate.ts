@@ -8,13 +8,11 @@ export interface ICandidate extends Document {
     birthDate?: Date;
     gender?: string;
     address?: string;
-    postalCode?: string;
-    city?: string;
-    country?: string;
+
     positionAppliedFor: string;
     department?: string;
     specialty?: string;
-    level?: string;
+
     yearsOfExperience?: number;
     language?: string;
     source?: string;
@@ -47,13 +45,10 @@ const CandidateSchema = new Schema<ICandidate>(
         birthDate: { type: Date },
         gender: { type: String, enum: ['MALE', 'FEMALE'] },
         address: { type: String },
-        postalCode: { type: String },
-        city: { type: String },
-        country: { type: String },
         positionAppliedFor: { type: String, required: true },
         department: { type: String },
         specialty: { type: String },
-        level: { type: String },
+    
         yearsOfExperience: { type: Number },
         language: { type: String },
         source: { type: String },
@@ -93,4 +88,4 @@ const CandidateSchema = new Schema<ICandidate>(
     }
 );
 
-export const Candidate = mongoose.model<ICandidate>('Candidate', CandidateSchema);
+export const Candidate = mongoose.model<ICandidate>('Candidate', CandidateSchema, 'Candidate');

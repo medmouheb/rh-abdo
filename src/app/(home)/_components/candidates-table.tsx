@@ -7,7 +7,8 @@ import Link from "next/link";
 import { format } from "date-fns";
 
 interface Candidate {
-  id: number;
+  _id: string;
+  id?: number | string;
   firstName: string;
   lastName: string;
   email: string;
@@ -29,10 +30,12 @@ export function CandidatesTable() {
     try {
       const response = await fetch("/api/candidates");
       if (response.ok) {
-        const data = await response.json();
+        const result = await response.json();
+        const candidatesList = result.data || []; // Extract data array
+
         // Sort by creation date, newest first
-        const sorted = data
-          .sort((a: Candidate, b: Candidate) => 
+        const sorted = candidatesList
+          .sort((a: Candidate, b: Candidate) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           )
           .slice(0, 10); // Show latest 10
@@ -124,7 +127,7 @@ export function CandidatesTable() {
               ) : (
                 candidates.map((candidate, index) => (
                   <motion.tr
-                    key={candidate.id}
+                    key={candidate._id || candidate.id}
                     className="border-b border-stroke dark:border-dark-3 hover:bg-gray-50 dark:hover:bg-gray-800"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -156,7 +159,7 @@ export function CandidatesTable() {
                     </td>
                     <td className="px-4 py-3">
                       <Link
-                        href={`/candidates/${candidate.id}`}
+                        href={`/candidates/${candidate._id || candidate.id}`}
                         className="text-primary hover:underline text-sm"
                       >
                         Voir →
