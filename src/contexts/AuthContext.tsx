@@ -3,77 +3,91 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { UserSession, UserRole } from "@/types/auth";
+import { authService } from "@/services/authService";
 
 interface AuthContextType {
   user: UserSession | null;
-  token: string | null;
   login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
   hasPermission: (permission: string) => boolean;
   hasRole: (role: UserRole) => boolean;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserSession | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Load user from localStorage on mount
+  console.log("🔒 AuthProvider: Rendering...");
+
+  if (typeof window !== 'undefined') {
+    console.log("🔒 AuthProvider: CRASH TEST INITIATED");
+    // throw new Error("CRASH TEST: AUTH PROVIDER IS MOUNTING");
+  }
+
+  // Load user from backend on mount (using cookie)
   useEffect(() => {
-    const storedToken = localStorage.getItem("auth_token");
-    const storedUser = localStorage.getItem("auth_user");
-    
-    if (storedToken && storedUser) {
+    console.log("🔒 AuthProvider: useEffect mounted! Starting user fetch...");
+    const fetchUser = async () => {
       try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error("Error loading auth data:", error);
-        localStorage.removeItem("auth_token");
-        localStorage.removeItem("auth_user");
+        console.log("🔒 AuthProvider: Calling authService.getCurrentUser()...");
+        const data = await authService.getCurrentUser();
+        console.log("🔒 AuthProvider: User fetched successfully:", data);
+
+        setUser({
+          userId: data.user.id,
+          username: data.user.username,
+          role: data.user.role,
+        });
+      } catch (error: any) {
+        console.error("🔒 AuthProvider: User fetch failed:", error);
+        // No valid session cookie
+        setUser(null);
+        // Fallback: If on a protected route, redirect to login
+        if (!window.location.pathname.startsWith('/auth')) {
+          console.log("🔒 AuthProvider: Redirecting to /auth/sign-in");
+          router.push('/auth/sign-in');
+        }
+      } finally {
+        setLoading(false);
       }
-    }
+    };
+
+    fetchUser();
   }, []);
 
   const login = async (username: string, password: string) => {
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
+      const data = await authService.login(username, password);
+
+      // Backend sets HTTP-only cookie automatically
+      setUser({
+        userId: data.user.id,
+        username: data.user.username,
+        role: data.user.role,
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Login failed");
-      }
-
-      const data = await response.json();
-      
-      setToken(data.token);
-      setUser(data.user);
-      
-      localStorage.setItem("auth_token", data.token);
-      localStorage.setItem("auth_user", JSON.stringify(data.user));
-      
       router.push("/");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
-      throw error;
+      throw new Error(error.response?.data?.message || "Login failed");
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("auth_user");
-    router.push("/auth/sign-in");
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      // Clear cookies automatically handled by backend
+      setUser(null);
+      router.push("/auth/sign-in");
+    }
   };
 
   const hasPermission = (permission: string): boolean => {
@@ -90,12 +104,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        token,
         login,
         logout,
         isAuthenticated: !!user,
         hasPermission,
         hasRole,
+        loading,
       }}
     >
       {children}

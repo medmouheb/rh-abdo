@@ -20,7 +20,18 @@ import {
 } from "@/components/animations/PageAnimations";
 import AnimatedBackground from "@/components/backgrounds/AnimatedBackground";
 
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+
 export default function Home() {
+  // Server-side auth check
+  const cookieStore = cookies();
+  const accessToken = cookieStore.get('accessToken');
+
+  if (!accessToken) {
+    redirect('/auth/sign-in');
+  }
+
   return (
     <>
       <AnimatedBackground variant="gradient" />

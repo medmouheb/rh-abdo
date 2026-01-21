@@ -1,0 +1,23 @@
+# Frontend Dockerfile (Next.js only, not Electron for Docker)
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install only production dependencies (skip Electron)
+RUN npm install --omit=dev --ignore-scripts
+
+# Copy source code
+COPY . .
+
+# Build Next.js app
+RUN npm run build
+
+# Expose port
+EXPOSE 3000
+
+# Start Next.js server
+CMD ["npm", "start"]
