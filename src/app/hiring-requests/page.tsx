@@ -33,6 +33,10 @@ interface HiringRequest {
     lastName: string;
     status: string;
   }>;
+  comments?: string;
+  validationRHStatus?: string;
+  validationPlantManagerStatus?: string;
+  validationRecruitmentStatus?: string;
 }
 
 const container = {
@@ -75,6 +79,51 @@ const HiringRequestsPage = () => {
     candidateEducation: '',
     candidateSkills: '',
   });
+
+  const [selectedRequest, setSelectedRequest] = useState<HiringRequest | null>(null);
+  const [refusalReason, setRefusalReason] = useState('');
+  const [showRefusalInput, setShowRefusalInput] = useState(false);
+
+  const handleReview = async (action: 'approve' | 'reject') => {
+    if (!selectedRequest) return;
+
+    if (action === 'reject' && !showRefusalInput) {
+      setShowRefusalInput(true);
+      return;
+    }
+
+    if (action === 'reject' && !refusalReason.trim()) {
+      alert("Veuillez indiquer le motif du refus.");
+      return;
+    }
+
+    try {
+      const payload: any = {
+        status: action === 'approve' ? 'VACANT' : 'CANCELLED',
+        comments: action === 'approve'
+          ? `VALIDÉ par ${user?.username || 'RH'}: Demande validée par RH.`
+          : `REFUSÉ par ${user?.username || 'RH'}: ${refusalReason}`
+      };
+
+      const response = await apiRequest(`/api/hiring-requests/${selectedRequest.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        alert(`Demande ${action === 'approve' ? 'validée' : 'refusée'} avec succès.`);
+        setSelectedRequest(null);
+        setRefusalReason('');
+        setShowRefusalInput(false);
+        fetchHiringRequests();
+      } else {
+        alert("Erreur lors de la mise à jour.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Erreur technique lors de l'opération.");
+    }
+  };
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -400,6 +449,116 @@ const HiringRequestsPage = () => {
           </div>
         )}
 
+        {/* DETAILS & REVIEW MODAL */}
+        {selectedRequest && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto backdrop-blur-sm">
+            <div className="bg-white dark:bg-boxdark rounded-xl shadow-2xl w-full max-w-2xl my-8 border border-gray-200 dark:border-strokedark">
+              <div className="p-6 border-b border-gray-200 dark:border-strokedark flex justify-between items-center bg-gray-50 dark:bg-meta-4/30 rounded-t-xl">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800 dark:text-white">{selectedRequest.jobTitle}</h2>
+                  <p className="text-sm text-gray-500">{selectedRequest.service} • {new Date(selectedRequest.createdAt).toLocaleDateString()} </p>
+                </div>
+                <button onClick={() => setSelectedRequest(null)} className="text-gray-500 hover:text-red-500 bg-gray-100 p-2 rounded-full transition hover:bg-red-50">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-8 max-h-[70vh] overflow-y-auto space-y-6">
+                {/* Details Grid */}
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="bg-gray-50 dark:bg-meta-4 p-4 rounded-lg">
+                    <strong className="block text-gray-500 mb-1">Demandeur</strong>
+                    <span className="text-gray-900 dark:text-white font-medium">{selectedRequest.recruiter?.username || 'N/A'} ({selectedRequest.recruiter?.role})</span>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-meta-4 p-4 rounded-lg">
+                    <strong className="block text-gray-500 mb-1">Type de Contrat</strong>
+                    <span className="text-gray-900 dark:text-white font-medium">{selectedRequest.contractType}</span>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-meta-4 p-4 rounded-lg">
+                    <strong className="block text-gray-500 mb-1">Date Souhaitée</strong>
+                    <span className="text-gray-900 dark:text-white font-medium">
+                      {selectedRequest.desiredHiringDate ? new Date(selectedRequest.desiredHiringDate).toLocaleDateString() : 'Non spécifiée'}
+                    </span>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-meta-4 p-4 rounded-lg">
+                    <strong className="block text-gray-500 mb-1">Lieu de Travail</strong>
+                    <span className="text-gray-900 dark:text-white font-medium">{selectedRequest.workLocation || 'N/A'}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-blue-500" /> Justification
+                  </h4>
+                  <p className="text-gray-600 dark:text-gray-300 bg-slate-50 dark:bg-meta-4/50 p-4 rounded-lg text-sm leading-relaxed border border-slate-100 dark:border-strokedark">
+                    {selectedRequest.justification}
+                  </p>
+                </div>
+
+                {/* Display Decision/Comments if available */}
+                {selectedRequest.comments && (
+                  <div className={`p-4 rounded-lg border ${selectedRequest.comments.startsWith('REFUSÉ') ? 'bg-red-50 border-red-100 dark:bg-red-900/10 dark:border-red-900/30' : 'bg-green-50 border-green-100 dark:bg-green-900/10 dark:border-green-900/30'}`}>
+                    <h4 className={`font-semibold mb-2 flex items-center gap-2 ${selectedRequest.comments.startsWith('REFUSÉ') ? 'text-red-600' : 'text-green-600'}`}>
+                      {selectedRequest.comments.startsWith('REFUSÉ') ? <AlertCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                      Décision RH
+                    </h4>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                      {selectedRequest.comments}
+                    </p>
+                  </div>
+                )}
+
+                {showRefusalInput && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="bg-red-50 dark:bg-red-900/10 p-4 rounded-lg border border-red-100 dark:border-red-900/30"
+                  >
+                    <h4 className="font-semibold text-red-600 mb-2">Motif du refus (Obligatoire)</h4>
+                    <textarea
+                      value={refusalReason}
+                      onChange={(e) => setRefusalReason(e.target.value)}
+                      className="w-full p-3 border border-red-200 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
+                      placeholder="Pourquoi refusez-vous cette demande ?"
+                      rows={3}
+                      autoFocus
+                    />
+                  </motion.div>
+                )}
+              </div>
+
+              <div className="p-6 border-t border-gray-200 dark:border-strokedark flex justify-end gap-3 bg-gray-50 dark:bg-meta-4/30 rounded-b-xl">
+                {/* Only RH Actions */}
+                {user?.role === 'RH' && selectedRequest.status !== 'CANCELLED' && selectedRequest.status !== 'HIRED' && (
+                  <>
+                    <button
+                      onClick={() => handleReview('reject')}
+                      className="px-5 py-2.5 border border-red-200 text-red-600 font-medium rounded-lg hover:bg-red-50 transition-colors flex items-center gap-2"
+                    >
+                      {showRefusalInput ? 'Confirmer le Refus' : 'Refuser'}
+                    </button>
+                    {!showRefusalInput && (
+                      <button
+                        onClick={() => handleReview('approve')}
+                        className="px-5 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors shadow-sm flex items-center gap-2"
+                      >
+                        <CheckCircle className="w-4 h-4" /> Accepter & Valider
+                      </button>
+                    )}
+                  </>
+                )}
+
+                <button
+                  onClick={() => setSelectedRequest(null)}
+                  className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ENHANCED LIST WITH ANIMATIONS */}
         <div className="space-y-4">
           {loading ? (
@@ -496,7 +655,10 @@ const HiringRequestsPage = () => {
                     </div>
 
                     <div className="flex flex-col items-end gap-2 min-w-[120px]">
-                      <button className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-lg transition-colors w-full justify-center">
+                      <button
+                        onClick={() => { setSelectedRequest(req); setShowRefusalInput(false); setRefusalReason(''); }}
+                        className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-lg transition-colors w-full justify-center"
+                      >
                         Détails <ChevronRight className="w-4 h-4" />
                       </button>
                       {canCreateRequest && (

@@ -5,6 +5,7 @@
   "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
+    "dev:all": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

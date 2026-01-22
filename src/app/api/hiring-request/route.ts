@@ -39,6 +39,7 @@ export async function POST(request: Request) {
         reason: body.reason, // "REPLACEMENT", "BUDGETED", "NON_BUDGETED"
         replacementName: body.replacementName,
         departureReason: body.departureReason,
+        recruitmentMode: body.recruitmentMode,
         dateRangeStart: body.dateRangeStart ? new Date(body.dateRangeStart) : undefined,
         dateRangeEnd: body.dateRangeEnd ? new Date(body.dateRangeEnd) : undefined,
         contractType: body.contractType, // "CDI", "CDD"
@@ -49,6 +50,43 @@ export async function POST(request: Request) {
         recruiterId: user?.userId,
       },
     });
+
+    // Notify RH users if the request was created by a non-RH user (e.g., CO or Manager)
+    if (user && (user.role === "CO" || user.role === "Manager")) {
+        try {
+            // Find all RH users
+            const rhUsers = await prisma.user.findMany({
+                where: {
+                    role: "RH"
+                },
+                select: {
+                    id: true
+                }
+            });
+
+            // Create notifications for each RH user
+            if (rhUsers.length > 0) {
+                // Use Promise.all to create notifications safely
+                await Promise.all(rhUsers.map(rh => 
+                    prisma.notification.create({
+                        data: {
+                            userId: rh.id,
+                            type: "HIRING_REQUEST_CREATED",
+                            title: "Nouvelle Demande d'Embauche",
+                            message: `Une nouvelle demande pour "${hiringRequest.jobTitle}" a été créée par ${user.username} (${user.role}).`,
+                            relatedId: hiringRequest.id,
+                            relatedType: "hiringRequest",
+                            createdBy: user.userId,
+                            isRead: false
+                        }
+                    })
+                ));
+            }
+        } catch (notifError) {
+            console.error("Error creating notifications:", notifError);
+            // We don't block the response if notification fails
+        }
+    }
 
     return NextResponse.json(hiringRequest);
   } catch (error) {

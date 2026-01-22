@@ -97,6 +97,102 @@ export async function PATCH(
             updateData.contractType = body.contractType;
         }
 
+        if (body.comments !== undefined) {
+            updateData.comments = body.comments;
+        }
+
+        // Multi-step Validation Handling
+        if (body.action) {
+            const currentRequest = await prisma.hiringRequest.findUnique({
+                where: { id: hiringRequestId }
+            });
+
+            if (currentRequest) {
+                // Apply specific validation
+                if (body.action === 'VALIDATE_RH') updateData.validationRHStatus = body.decision;
+                if (body.action === 'VALIDATE_MANAGER') updateData.validationPlantManagerStatus = body.decision;
+                if (body.action === 'VALIDATE_RECRUITMENT') updateData.validationRecruitmentStatus = body.decision;
+
+                // Check overall status
+                const sRH = updateData.validationRHStatus || (currentRequest as any).validationRHStatus || 'PENDING';
+                const sManager = updateData.validationPlantManagerStatus || (currentRequest as any).validationPlantManagerStatus || 'PENDING';
+                const sRec = updateData.validationRecruitmentStatus || (currentRequest as any).validationRecruitmentStatus || 'PENDING';
+
+                if (body.decision === 'REJECTED') {
+                    updateData.status = 'CANCELLED';
+                } else if (sRH === 'APPROVED' && sManager === 'APPROVED' && sRec === 'APPROVED') {
+                    updateData.status = 'VACANT';
+                }
+                // If still pending, status remains PENDING_VALIDATION (or whatever it is)
+
+                // --- Notification Logic ---
+                try {
+                    // 1. Refusal -> Notify Creator (Demandeur)
+                    if (body.decision === 'REJECTED' && currentRequest.recruiterId) {
+                         // Extract simple reason if possible, or use full comment
+                         const reason = body.comments || 'Non spécifiée';
+                         
+                         await prisma.notification.create({
+                            data: {
+                                userId: currentRequest.recruiterId,
+                                type: 'HIRING_REQUEST_REJECTED',
+                                title: 'Demande Refusée',
+                                message: `Votre demande pour "${currentRequest.jobTitle}" a été refusée (${body.action}). Raison: ${reason}`,
+                                relatedId: hiringRequestId,
+                                relatedType: 'hiringRequest',
+                                createdBy: payload.userId,
+                            }
+                         });
+                    }
+                    
+                    // 2. Approval Transitions
+                    if (body.decision === 'APPROVED') {
+                        // RH Validated -> Notify Plant Managers
+                        if (body.action === 'VALIDATE_RH') {
+                             const managers = await prisma.user.findMany({ where: { role: 'Manager' }, select: { id: true } });
+                             if (managers.length > 0) {
+                                 await Promise.all(managers.map(m => 
+                                     prisma.notification.create({
+                                         data: {
+                                             userId: m.id,
+                                             type: 'VALIDATION_REQUIRED',
+                                             title: 'Validation Requise (Plant Manager)',
+                                             message: `Validation RH effectuée pour "${currentRequest.jobTitle}". Votre validation est attendue.`,
+                                             relatedId: hiringRequestId,
+                                             relatedType: 'hiringRequest',
+                                             createdBy: payload.userId,
+                                         }
+                                     })
+                                 ));
+                             }
+                        }
+                        
+                        // Manager Validated -> Notify Recruitment (RH users)
+                        if (body.action === 'VALIDATE_MANAGER') {
+                             const rhUsers = await prisma.user.findMany({ where: { role: 'RH' }, select: { id: true } });
+                             if (rhUsers.length > 0) {
+                                 await Promise.all(rhUsers.map(rh => 
+                                     prisma.notification.create({
+                                         data: {
+                                             userId: rh.id,
+                                             type: 'VALIDATION_REQUIRED',
+                                             title: 'Validation Requise (Resp. Recrutement)',
+                                             message: `Validation Plant Manager effectuée pour "${currentRequest.jobTitle}". Validation finale attendue.`,
+                                             relatedId: hiringRequestId, // Using original ID
+                                             relatedType: 'hiringRequest',
+                                             createdBy: payload.userId,
+                                         }
+                                     })
+                                 ));
+                             }
+                        }
+                    }
+                } catch (notifError) {
+                     console.error("Notification Error:", notifError);
+                }
+            }
+        }
+
         // Update the hiring request
         const updatedRequest = await prisma.hiringRequest.update({
             where: { id: hiringRequestId },

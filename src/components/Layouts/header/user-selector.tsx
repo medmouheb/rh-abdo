@@ -8,21 +8,23 @@ import {
 } from "@/components/ui/dropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 export function UserSelector() {
   const { user } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
 
-  const displayName = user?.username 
+  const displayName = user?.username
     ? `${user.username} (${user.role})`
     : "Non connecté";
 
   return (
-    <Dropdown>
+    <Dropdown isOpen={isOpen} setIsOpen={setIsOpen}>
       <DropdownTrigger className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-strokedark dark:bg-meta-4 dark:text-white dark:hover:bg-meta-3 outline-none focus:ring-2 focus:ring-primary/20 transition-all">
         <div className="flex items-center gap-2">
           <span className="hidden sm:inline">{displayName}</span>
           <span className="sm:hidden">{user?.role || "User"}</span>
-          <ChevronUpIcon 
+          <ChevronUpIcon
             className="h-4 w-4 text-gray-500 dark:text-gray-400 rotate-180"
             strokeWidth={2}
           />

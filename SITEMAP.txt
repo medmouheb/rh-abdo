@@ -1,0 +1,90 @@
+RH PLATFORM - COMPLETE SITEMAP
+═══════════════════════════════════════════════════════════════
+
+📱 APPLICATION STRUCTURE
+├── 🏠 MAIN MENU
+│   ├── Dashboard
+│   │   └── Vue d'ensemble (/)
+│   └── Calendar (/calendar)
+│
+├── 👥 RECRUITMENT
+│   ├── Tableau de Bord (/recruitment)
+│   ├── Demandes d'Embauche
+│   │   ├── Liste des demandes (/hiring-requests)
+│   │   └── Créer une demande (/hiring-requests/create)
+│   ├── Candidatures
+│   │   ├── Liste des candidats (/candidates)
+│   │   └── Nouvelle candidature (/candidates/create)
+│   └── Positions Vacantes (/vacant-positions)
+│
+├── ⚙️ ADMINISTRATION
+│   ├── Utilisateurs (/users)
+│   └── Départements (/departments)
+│
+└── 🔐 SETTINGS
+    └── Authentication
+        └── Sign In (/auth/sign-in)
+
+═══════════════════════════════════════════════════════════════
+
+🔌 API ENDPOINTS
+├── Authentication
+│   └── POST /api/auth/login
+│
+├── Candidates
+│   ├── GET /api/candidates
+│   ├── POST /api/candidates
+│   ├── GET /api/candidates/[id]
+│   └── GET /api/candidates/[id]/status-history
+│
+├── Hiring Requests
+│   ├── GET /api/hiring-requests
+│   ├── POST /api/hiring-requests
+│   ├── GET /api/hiring-requests/[id]
+│   ├── GET /api/hiring-requests/[id]/candidates
+│   └── GET /api/hiring-requests/[id]/candidates/[candidateId]
+│
+├── Employees
+│   ├── GET /api/employees
+│   └── GET /api/employees/[id]
+│
+├── Interviews
+│   ├── GET /api/interviews
+│   ├── POST /api/interviews
+│   └── GET /api/interviews/[id]
+│
+├── Notifications
+│   ├── GET /api/notifications
+│   └── GET /api/notifications/[id]
+│
+├── Vacant Positions
+│   └── POST /api/vacant-positions/[id]/assign-candidate
+│
+└── Upload
+    └── POST /api/upload/[id]/[type]
+
+═══════════════════════════════════════════════════════════════
+
+📊 TOTAL COUNT
+├── Frontend Pages: 11 pages
+├── API Endpoints: 19 endpoints
+└── Sidebar Sections: 4 sections
+
+═══════════════════════════════════════════════════════════════
+
+🎯 QUICK ACCESS URLS
+
+Main Application:     http://localhost:3000
+Dashboard:            http://localhost:3000/
+Calendar:             http://localhost:3000/calendar
+Recruitment:          http://localhost:3000/recruitment
+Hiring Requests:      http://localhost:3000/hiring-requests
+Create Request:       http://localhost:3000/hiring-requests/create
+Candidates:           http://localhost:3000/candidates
+Create Candidate:     http://localhost:3000/candidates/create
+Vacant Positions:     http://localhost:3000/vacant-positions
+Users:                http://localhost:3000/users
+Departments:          http://localhost:3000/departments
+Sign In:              http://localhost:3000/auth/sign-in
+
+═══════════════════════════════════════════════════════════════

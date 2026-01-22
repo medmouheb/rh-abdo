@@ -17,8 +17,8 @@ async function requireAuth(request: Request, allowedRoles?: UserRole[]) {
 }
 
 export async function POST(request: Request) {
-  // Only RH and CO can create candidates
-  const { error } = await requireAuth(request, ["RH", "CO"]);
+  // Only RH can create candidates (CO restricted as per request)
+  const { error } = await requireAuth(request, ["RH"]);
   if (error) return error;
 
   try {
@@ -48,19 +48,31 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  const { error } = await requireAuth(request);
+  const { error, user } = await requireAuth(request);
   if (error) return error;
 
   try {
     const { searchParams } = new URL(request.url);
     const hiringRequestId = searchParams.get("hiringRequestId");
+    const where: any = {};
+
+    if (hiringRequestId) {
+        where.hiringRequestId = parseInt(hiringRequestId);
+    }
+
+    // Strict Restriction for CO: Only see candidates for purely THEIR requests
+    if (user?.role === "CO") {
+        where.hiringRequest = {
+            recruiterId: user.userId
+        };
+    }
 
     const candidates = await prisma.candidate.findMany({
-      where: hiringRequestId ? { hiringRequestId: parseInt(hiringRequestId) } : undefined,
+      where,
       orderBy: { createdAt: "desc" },
       include: {
         hiringRequest: {
-          select: { jobTitle: true }
+          select: { jobTitle: true, recruiterId: true }
         }
       }
     });

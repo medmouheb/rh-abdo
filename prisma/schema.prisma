@@ -82,8 +82,13 @@ model HiringRequest {
   performanceRatio    Float?   // Performance ratio (RD)
   actualHiringDate    DateTime?
 
-  status String @default("VACANT") // VACANT, HIRED, IN_PROGRESS, COMPLETED, CANCELLED, SUSPENDED
+  status String @default("PENDING_VALIDATION") // PENDING_VALIDATION (new default), VACANT, HIRED, IN_PROGRESS, COMPLETED, CANCELLED, SUSPENDED
 
+  // Multi-step Validation
+  validationRHStatus           String @default("PENDING") // PENDING, APPROVED, REJECTED
+  validationPlantManagerStatus String @default("PENDING")
+  validationRecruitmentStatus  String @default("PENDING")
+  
   candidates Candidate[]
 }
 

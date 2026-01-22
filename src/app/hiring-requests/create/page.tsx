@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { FileText, User, Briefcase, Calendar, Send, Plus, Trash2 } from 'lucide-react';
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 
+import { apiRequest } from '@/lib/api-client';
+
 const HiringRequestForm = () => {
     const [formData, setFormData] = useState({
         responsable: '',
@@ -89,7 +91,7 @@ const HiringRequestForm = () => {
                 desiredHiringDate: formData.dateSouhaitee ? new Date(formData.dateSouhaitee) : (formData.dateVisite ? new Date(formData.dateVisite) : new Date()),
                 reason: formData.natureDemande === 'remplacement' ? "REPLACEMENT" : "CREATION",
                 replacementName: formData.remplacementQui,
-                recruitmentMode: formData.typeRecrutement,
+                recruitmentMode: formData.typeRecrutement === 'Interne' ? "INTERNAL" : "EXTERNAL",
                 contractType: formData.modeEmbauche || "CDI",
                 justification: formData.justificationDemande,
                 jobCharacteristics: formData.besoins.map(b => b.description).join(', '),
@@ -97,13 +99,15 @@ const HiringRequestForm = () => {
                 candidateSkills: formData.competences,
             };
 
-            const response = await fetch("/api/hiring-request", {
+            const response = await apiRequest("/api/hiring-request", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(apiData),
             });
 
-            if (!response.ok) throw new Error("Failed to submit");
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Failed to submit");
+            }
 
             setMessage({ type: 'success', text: 'Demande d\'embauche soumise avec succès!' });
 
@@ -112,6 +116,7 @@ const HiringRequestForm = () => {
                 window.location.href = '/vacant-positions';
             }, 2000);
         } catch (error) {
+            console.error(error);
             setMessage({ type: 'error', text: 'Une erreur est survenue. Veuillez réessayer.' });
         } finally {
             setIsSubmitting(false);
